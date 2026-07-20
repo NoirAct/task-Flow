@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { BoardColumnView } from "@/features/board/board-column";
+import { TaskDetailDialog } from "@/features/board/task-detail-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { boardApi } from "@/services/board";
 import type { Board, BoardColumn, BoardTask } from "@/types/board";
@@ -42,6 +43,7 @@ export function BoardPage() {
   const [localBoard, setLocalBoard] = useState<Board | null>(null);
   const boardRef = useRef<Board | null>(null);
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["board", projectId],
@@ -246,6 +248,7 @@ export function BoardPage() {
               onAddTask={async (columnId, title) => {
                 await createMutation.mutateAsync({ columnId, title });
               }}
+              onOpenTask={setSelectedTaskId}
               onDeleteTask={(taskId) => deleteMutation.mutate(taskId)}
             />
           ))}
@@ -259,6 +262,14 @@ export function BoardPage() {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      <TaskDetailDialog
+        open={Boolean(selectedTaskId)}
+        taskId={selectedTaskId}
+        projectId={projectId}
+        assignees={localBoard.project.owner ? [localBoard.project.owner] : []}
+        onClose={() => setSelectedTaskId(null)}
+      />
     </div>
   );
 }

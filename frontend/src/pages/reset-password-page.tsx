@@ -5,7 +5,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useAuthErrorMessage } from "@/hooks/use-auth-error";
 import { authApi } from "@/services/auth";
 
@@ -72,17 +72,15 @@ export function ResetPasswordPage() {
         </div>
       ) : (
         <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
-          <Input
+          <PasswordInput
             label={t("fields.password")}
-            type="password"
             autoComplete="new-password"
             placeholder={t("placeholders.password")}
             error={errors.password?.message}
             {...register("password")}
           />
-          <Input
+          <PasswordInput
             label={t("fields.confirmPassword")}
-            type="password"
             autoComplete="new-password"
             placeholder={t("placeholders.password")}
             error={errors.confirmPassword?.message}

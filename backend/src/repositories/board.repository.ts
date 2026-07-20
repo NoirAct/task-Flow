@@ -1,6 +1,15 @@
 import { prisma } from "../config/database.js";
 import { DEFAULT_COLUMNS } from "../config/board-defaults.js";
 
+const boardTaskInclude = {
+  orderBy: { position: "asc" as const },
+  include: {
+    labels: { include: { label: true } },
+    checklist: { select: { id: true, done: true } },
+    assignee: { select: { id: true, name: true, email: true, avatarUrl: true } },
+  },
+};
+
 export const boardRepository = {
   findByProjectId(projectId: string) {
     return prisma.board.findUnique({
@@ -9,9 +18,7 @@ export const boardRepository = {
         columns: {
           orderBy: { position: "asc" },
           include: {
-            tasks: {
-              orderBy: { position: "asc" },
-            },
+            tasks: boardTaskInclude,
           },
         },
         project: {
@@ -21,6 +28,7 @@ export const boardRepository = {
             key: true,
             color: true,
             ownerId: true,
+            owner: { select: { id: true, name: true, email: true, avatarUrl: true } },
           },
         },
       },
@@ -44,9 +52,7 @@ export const boardRepository = {
         columns: {
           orderBy: { position: "asc" },
           include: {
-            tasks: {
-              orderBy: { position: "asc" },
-            },
+            tasks: boardTaskInclude,
           },
         },
         project: {
@@ -56,6 +62,7 @@ export const boardRepository = {
             key: true,
             color: true,
             ownerId: true,
+            owner: { select: { id: true, name: true, email: true, avatarUrl: true } },
           },
         },
       },

@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useAuth } from "@/contexts/auth-context";
 import { useAuthErrorMessage } from "@/hooks/use-auth-error";
 
@@ -58,9 +59,8 @@ export function LoginPage() {
           error={errors.email?.message}
           {...register("email")}
         />
-        <Input
+        <PasswordInput
           label={t("fields.password")}
-          type="password"
           autoComplete="current-password"
           placeholder={t("placeholders.password")}
           error={errors.password?.message}

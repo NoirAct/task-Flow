@@ -11,10 +11,16 @@ import { cn } from "@/utils/cn";
 type BoardColumnProps = {
   column: BoardColumn;
   onAddTask: (columnId: string, title: string) => Promise<void>;
+  onOpenTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
 };
 
-export function BoardColumnView({ column, onAddTask, onDeleteTask }: BoardColumnProps) {
+export function BoardColumnView({
+  column,
+  onAddTask,
+  onOpenTask,
+  onDeleteTask,
+}: BoardColumnProps) {
   const { t } = useTranslation(["board", "common"]);
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
@@ -63,7 +69,12 @@ export function BoardColumnView({ column, onAddTask, onDeleteTask }: BoardColumn
             <p className="px-1 py-6 text-center text-xs text-fg-subtle">{t("emptyColumn")}</p>
           ) : (
             column.tasks.map((task) => (
-              <TaskCard key={task.id} task={task} onDelete={onDeleteTask} />
+              <TaskCard
+                key={task.id}
+                task={task}
+                onOpen={onOpenTask}
+                onDelete={onDeleteTask}
+              />
             ))
           )}
         </SortableContext>

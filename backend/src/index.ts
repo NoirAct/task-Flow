@@ -9,10 +9,25 @@ import { routes } from "./routes/index.js";
 
 const app = express();
 
+function isAllowedOrigin(origin?: string) {
+  if (!origin) return true;
+  if (origin === env.CLIENT_URL) return true;
+  if (env.NODE_ENV === "development" && /^http:\/\/localhost:\d+$/.test(origin)) {
+    return true;
+  }
+  return false;
+}
+
 app.use(helmet());
 app.use(
   cors({
-    origin: env.CLIENT_URL,
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+      }
+    },
     credentials: true,
   }),
 );

@@ -82,6 +82,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+button:not(:disabled),
+a,
+[role="button"],
+summary,
+label,
+select,
+input[type="checkbox"],
+input[type="radio"],
+input[type="color"] {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
