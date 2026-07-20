@@ -98,3 +98,71 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   return (await response.json()) as T;
 }
+
+export async function apiUpload<T>(path: string, file: File, fieldName = "file"): Promise<T> {
+  const formData = new FormData();
+  formData.append(fieldName, file);
+
+  const makeRequest = (token: string | null) =>
+    fetch(`${API_URL}${path}`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+  let token = accessTokenMemory;
+  let response = await makeRequest(token);
+
+  if (response.status === 401) {
+    token = await refreshAccessToken();
+    if (token) response = await makeRequest(token);
+  }
+
+  if (!response.ok) {
+    let message = "Upload failed";
+    let code: string | undefined;
+    try {
+      const data = (await response.json()) as ApiErrorBody;
+      message = data.error?.message ?? message;
+      code = data.error?.code;
+    } catch {
+      // ignore
+    }
+    throw new ApiError(response.status, code, message);
+  }
+
+  return (await response.json()) as T;
+}
+
+export async function apiDownload(path: string, filename: string) {
+  const makeRequest = (token: string | null) =>
+    fetch(`${API_URL}${path}`, {
+      credentials: "include",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+  let token = accessTokenMemory;
+  let response = await makeRequest(token);
+
+  if (response.status === 401) {
+    token = await refreshAccessToken();
+    if (token) response = await makeRequest(token);
+  }
+
+  if (!response.ok) {
+    throw new ApiError(response.status, undefined, "Download failed");
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}

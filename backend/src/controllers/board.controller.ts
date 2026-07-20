@@ -82,4 +82,71 @@ export const boardController = {
     await boardService.deleteChecklistItem(req.user!.sub, req.params.itemId as string);
     return res.status(204).send();
   },
+
+  async createComment(req: Request, res: Response) {
+    const comment = await boardService.createComment(
+      req.user!.sub,
+      req.params.taskId as string,
+      req.body,
+    );
+    return res.status(201).json({ comment });
+  },
+
+  async updateComment(req: Request, res: Response) {
+    const comment = await boardService.updateComment(
+      req.user!.sub,
+      req.params.commentId as string,
+      req.body,
+    );
+    return res.json({ comment });
+  },
+
+  async deleteComment(req: Request, res: Response) {
+    await boardService.deleteComment(req.user!.sub, req.params.commentId as string);
+    return res.status(204).send();
+  },
+
+  async uploadTaskAttachment(req: Request, res: Response) {
+    if (!req.file) {
+      return res.status(400).json({
+        error: { message: "File is required", code: "FILE_REQUIRED" },
+      });
+    }
+    const attachment = await boardService.addTaskAttachment(
+      req.user!.sub,
+      req.params.taskId as string,
+      req.file,
+    );
+    return res.status(201).json({ attachment });
+  },
+
+  async uploadCommentAttachment(req: Request, res: Response) {
+    if (!req.file) {
+      return res.status(400).json({
+        error: { message: "File is required", code: "FILE_REQUIRED" },
+      });
+    }
+    const attachment = await boardService.addCommentAttachment(
+      req.user!.sub,
+      req.params.commentId as string,
+      req.file,
+    );
+    return res.status(201).json({ attachment });
+  },
+
+  async downloadAttachment(req: Request, res: Response) {
+    const attachment = await boardService.getAttachmentForDownload(
+      req.user!.sub,
+      req.params.attachmentId as string,
+    );
+    return res.download(attachment.storagePath, attachment.originalName);
+  },
+
+  async deleteAttachment(req: Request, res: Response) {
+    await boardService.deleteAttachment(
+      req.user!.sub,
+      req.params.attachmentId as string,
+    );
+    return res.status(204).send();
+  },
 };

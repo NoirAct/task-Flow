@@ -20,6 +20,26 @@ export type ChecklistItem = {
   position: number;
 };
 
+export type TaskAttachment = {
+  id: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+  uploadedBy: { id: string; name: string } | null;
+  url: string;
+};
+
+export type TaskComment = {
+  id: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+  author: UserSummary | null;
+  attachments: TaskAttachment[];
+};
+
 export type BoardTask = {
   id: string;
   columnId: string;
@@ -43,6 +63,8 @@ export type BoardTask = {
 export type TaskDetail = BoardTask & {
   createdBy: UserSummary | null;
   checklist: ChecklistItem[];
+  comments: TaskComment[];
+  attachments: TaskAttachment[];
 };
 
 export type BoardColumn = {

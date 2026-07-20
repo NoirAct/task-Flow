@@ -1,5 +1,14 @@
-import { apiRequest } from "@/services/api";
-import type { Board, BoardTask, ChecklistItem, TaskDetail, TaskLabel, TaskPriority } from "@/types/board";
+import { apiDownload, apiRequest, apiUpload } from "@/services/api";
+import type {
+  Board,
+  BoardTask,
+  ChecklistItem,
+  TaskAttachment,
+  TaskComment,
+  TaskDetail,
+  TaskLabel,
+  TaskPriority,
+} from "@/types/board";
 
 export type UpdateTaskPayload = {
   title?: string;
@@ -73,5 +82,45 @@ export const boardApi = {
 
   deleteChecklistItem(itemId: string) {
     return apiRequest<void>(`/checklist/${itemId}`, { method: "DELETE" });
+  },
+
+  createComment(taskId: string, body: string) {
+    return apiRequest<{ comment: TaskComment }>(`/tasks/${taskId}/comments`, {
+      method: "POST",
+      body: { body },
+    });
+  },
+
+  updateComment(commentId: string, body: string) {
+    return apiRequest<{ comment: TaskComment }>(`/comments/${commentId}`, {
+      method: "PATCH",
+      body: { body },
+    });
+  },
+
+  deleteComment(commentId: string) {
+    return apiRequest<void>(`/comments/${commentId}`, { method: "DELETE" });
+  },
+
+  uploadTaskAttachment(taskId: string, file: File) {
+    return apiUpload<{ attachment: TaskAttachment }>(
+      `/tasks/${taskId}/attachments`,
+      file,
+    );
+  },
+
+  uploadCommentAttachment(commentId: string, file: File) {
+    return apiUpload<{ attachment: TaskAttachment }>(
+      `/comments/${commentId}/attachments`,
+      file,
+    );
+  },
+
+  downloadAttachment(attachment: TaskAttachment) {
+    return apiDownload(attachment.url, attachment.originalName);
+  },
+
+  deleteAttachment(attachmentId: string) {
+    return apiRequest<void>(`/attachments/${attachmentId}`, { method: "DELETE" });
   },
 };

@@ -6,6 +6,21 @@ const taskDetailInclude = {
   checklist: { orderBy: { position: "asc" as const } },
   assignee: { select: { id: true, name: true, email: true, avatarUrl: true } },
   createdBy: { select: { id: true, name: true, email: true, avatarUrl: true } },
+  comments: {
+    orderBy: { createdAt: "asc" as const },
+    include: {
+      author: { select: { id: true, name: true, email: true, avatarUrl: true } },
+      attachments: {
+        orderBy: { createdAt: "asc" as const },
+        include: { uploadedBy: { select: { id: true, name: true } } },
+      },
+    },
+  },
+  attachments: {
+    where: { commentId: null },
+    orderBy: { createdAt: "asc" as const },
+    include: { uploadedBy: { select: { id: true, name: true } } },
+  },
   column: {
     include: {
       board: {

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TaskComments } from "@/features/board/task-comments";
 import { boardApi } from "@/services/board";
 import type { TaskPriority, UserSummary } from "@/types/board";
 import { cn } from "@/utils/cn";
@@ -332,6 +333,12 @@ export function TaskDetailDialog({
               </Button>
             </div>
           </div>
+
+          <TaskComments
+            taskId={task.id}
+            comments={task.comments}
+            attachments={task.attachments}
+          />
 
           <div className="flex justify-end gap-2 border-t border-border pt-4">
             <Button variant="secondary" onClick={onClose}>

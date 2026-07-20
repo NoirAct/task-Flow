@@ -1,5 +1,9 @@
 import type { TaskPriority } from "@prisma/client";
 import { boardRepository } from "../repositories/board.repository.js";
+import {
+  attachmentRepository,
+  commentRepository,
+} from "../repositories/comment.repository.js";
 import { projectRepository } from "../repositories/project.repository.js";
 import { taskRepository } from "../repositories/task.repository.js";
 import { AppError } from "../utils/errors.js";
@@ -11,6 +15,7 @@ import type {
   UpdateChecklistItemInput,
   UpdateTaskInput,
 } from "../validators/task.validator.js";
+import fs from "node:fs/promises";
 
 type UserSummary = {
   id: string;
@@ -85,6 +90,55 @@ function mapTaskCard(task: {
   };
 }
 
+function mapAttachment(attachment: {
+  id: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  createdAt: Date;
+  uploadedBy?: { id: string; name: string } | null;
+}) {
+  return {
+    id: attachment.id,
+    filename: attachment.filename,
+    originalName: attachment.originalName,
+    mimeType: attachment.mimeType,
+    size: attachment.size,
+    createdAt: attachment.createdAt,
+    uploadedBy: attachment.uploadedBy
+      ? { id: attachment.uploadedBy.id, name: attachment.uploadedBy.name }
+      : null,
+    url: `/attachments/${attachment.id}/download`,
+  };
+}
+
+function mapComment(comment: {
+  id: string;
+  body: string;
+  createdAt: Date;
+  updatedAt: Date;
+  author: { id: string; name: string; email: string; avatarUrl: string | null };
+  attachments: {
+    id: string;
+    filename: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    createdAt: Date;
+    uploadedBy?: { id: string; name: string } | null;
+  }[];
+}) {
+  return {
+    id: comment.id,
+    body: comment.body,
+    createdAt: comment.createdAt,
+    updatedAt: comment.updatedAt,
+    author: mapUser(comment.author),
+    attachments: comment.attachments.map(mapAttachment),
+  };
+}
+
 function mapTaskDetail(
   task: NonNullable<Awaited<ReturnType<typeof taskRepository.findById>>>,
 ) {
@@ -97,6 +151,8 @@ function mapTaskDetail(
       done: item.done,
       position: item.position,
     })),
+    comments: task.comments.map(mapComment),
+    attachments: task.attachments.map(mapAttachment),
   };
 }
 
@@ -344,5 +400,154 @@ export const boardService = {
     }
     await assertProjectAccess(userId, item.task.column.board.projectId);
     await taskRepository.deleteChecklistItem(itemId);
+  },
+
+  async createComment(
+    userId: string,
+    taskId: string,
+    input: { body: string },
+  ) {
+    const task = await taskRepository.findById(taskId);
+    if (!task) {
+      throw new AppError(404, "Task not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, task.column.board.projectId);
+
+    const comment = await commentRepository.create({
+      taskId,
+      authorId: userId,
+      body: input.body,
+    });
+    return mapComment(comment);
+  },
+
+  async updateComment(
+    userId: string,
+    commentId: string,
+    input: { body: string },
+  ) {
+    const existing = await commentRepository.findById(commentId);
+    if (!existing) {
+      throw new AppError(404, "Comment not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, existing.task.column.board.projectId);
+    if (existing.authorId !== userId) {
+      throw new AppError(403, "You can only edit your own comments", "FORBIDDEN");
+    }
+    const comment = await commentRepository.update(commentId, input.body);
+    return mapComment(comment);
+  },
+
+  async deleteComment(userId: string, commentId: string) {
+    const existing = await commentRepository.findById(commentId);
+    if (!existing) {
+      throw new AppError(404, "Comment not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, existing.task.column.board.projectId);
+    if (existing.authorId !== userId) {
+      throw new AppError(403, "You can only delete your own comments", "FORBIDDEN");
+    }
+    await commentRepository.delete(commentId);
+  },
+
+  async addTaskAttachment(
+    userId: string,
+    taskId: string,
+    file: {
+      filename: string;
+      originalname: string;
+      mimetype: string;
+      size: number;
+      path: string;
+    },
+  ) {
+    const task = await taskRepository.findById(taskId);
+    if (!task) {
+      throw new AppError(404, "Task not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, task.column.board.projectId);
+
+    const attachment = await attachmentRepository.create({
+      taskId,
+      filename: file.filename,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      storagePath: file.path,
+      uploadedById: userId,
+    });
+    return mapAttachment(attachment);
+  },
+
+  async addCommentAttachment(
+    userId: string,
+    commentId: string,
+    file: {
+      filename: string;
+      originalname: string;
+      mimetype: string;
+      size: number;
+      path: string;
+    },
+  ) {
+    const comment = await commentRepository.findById(commentId);
+    if (!comment) {
+      throw new AppError(404, "Comment not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, comment.task.column.board.projectId);
+
+    const attachment = await attachmentRepository.create({
+      commentId,
+      taskId: comment.taskId,
+      filename: file.filename,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      storagePath: file.path,
+      uploadedById: userId,
+    });
+    return mapAttachment(attachment);
+  },
+
+  async getAttachmentForDownload(userId: string, attachmentId: string) {
+    const attachment = await attachmentRepository.findById(attachmentId);
+    if (!attachment) {
+      throw new AppError(404, "Attachment not found", "NOT_FOUND");
+    }
+
+    const projectId =
+      attachment.task?.column.board.projectId ??
+      attachment.comment?.task.column.board.projectId;
+
+    if (!projectId) {
+      throw new AppError(404, "Attachment not found", "NOT_FOUND");
+    }
+
+    await assertProjectAccess(userId, projectId);
+    return attachment;
+  },
+
+  async deleteAttachment(userId: string, attachmentId: string) {
+    const attachment = await attachmentRepository.findById(attachmentId);
+    if (!attachment) {
+      throw new AppError(404, "Attachment not found", "NOT_FOUND");
+    }
+
+    const projectId =
+      attachment.task?.column.board.projectId ??
+      attachment.comment?.task.column.board.projectId;
+
+    if (!projectId) {
+      throw new AppError(404, "Attachment not found", "NOT_FOUND");
+    }
+
+    await assertProjectAccess(userId, projectId);
+
+    if (attachment.uploadedById !== userId) {
+      throw new AppError(403, "You can only delete your own attachments", "FORBIDDEN");
+    }
+
+    await attachmentRepository.delete(attachmentId);
+    await fs.unlink(attachment.storagePath).catch(() => undefined);
   },
 };

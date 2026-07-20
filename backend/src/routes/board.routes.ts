@@ -1,7 +1,12 @@
 import { Router } from "express";
 import { boardController } from "../controllers/board.controller.js";
 import { authenticate } from "../middlewares/authenticate.js";
+import { upload } from "../middlewares/upload.js";
 import { validate } from "../middlewares/validate.js";
+import {
+  createCommentSchema,
+  updateCommentSchema,
+} from "../validators/comment.validator.js";
 import {
   createChecklistItemSchema,
   createLabelSchema,
@@ -69,4 +74,48 @@ boardRoutes.patch(
 
 boardRoutes.delete("/checklist/:itemId", (req, res, next) => {
   boardController.deleteChecklistItem(req, res).catch(next);
+});
+
+boardRoutes.post(
+  "/tasks/:taskId/comments",
+  validate(createCommentSchema),
+  (req, res, next) => {
+    boardController.createComment(req, res).catch(next);
+  },
+);
+
+boardRoutes.patch(
+  "/comments/:commentId",
+  validate(updateCommentSchema),
+  (req, res, next) => {
+    boardController.updateComment(req, res).catch(next);
+  },
+);
+
+boardRoutes.delete("/comments/:commentId", (req, res, next) => {
+  boardController.deleteComment(req, res).catch(next);
+});
+
+boardRoutes.post(
+  "/tasks/:taskId/attachments",
+  upload.single("file"),
+  (req, res, next) => {
+    boardController.uploadTaskAttachment(req, res).catch(next);
+  },
+);
+
+boardRoutes.post(
+  "/comments/:commentId/attachments",
+  upload.single("file"),
+  (req, res, next) => {
+    boardController.uploadCommentAttachment(req, res).catch(next);
+  },
+);
+
+boardRoutes.get("/attachments/:attachmentId/download", (req, res, next) => {
+  boardController.downloadAttachment(req, res).catch(next);
+});
+
+boardRoutes.delete("/attachments/:attachmentId", (req, res, next) => {
+  boardController.deleteAttachment(req, res).catch(next);
 });
