@@ -1,0 +1,33 @@
+{
+  "app": {
+    "name": "TaskFlow",
+    "tagline": "Project management for modern teams"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "back": "Back",
+    "logout": "Log out",
+    "loading": "Loading…"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "label": "Theme"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "pt": "Portuguese"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Unable to reach the server."
+  },
+  "empty": {
+    "title": "Nothing here yet",
+    "description": "Content will appear once you create something."
+  }
+}

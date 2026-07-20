@@ -1,0 +1,53 @@
+{
+  "title": "Projetos",
+  "subtitle": "Crie e organize seus workspaces",
+  "searchPlaceholder": "Buscar projetos…",
+  "create": "Novo projeto",
+  "edit": "Editar projeto",
+  "emptyTitle": "Nenhum projeto ainda",
+  "emptyDescription": "Crie seu primeiro projeto para começar a organizar o trabalho.",
+  "emptySearch": "Nenhum projeto corresponde à busca.",
+  "filters": {
+    "active": "Ativos",
+    "archived": "Arquivados",
+    "all": "Todos",
+    "favorites": "Favoritos"
+  },
+  "fields": {
+    "name": "Nome",
+    "description": "Descrição",
+    "key": "Chave",
+    "color": "Cor"
+  },
+  "placeholders": {
+    "name": "Redesign do site",
+    "description": "Resumo opcional",
+    "key": "WEB"
+  },
+  "actions": {
+    "save": "Salvar",
+    "create": "Criar projeto",
+    "favorite": "Favoritar",
+    "unfavorite": "Remover favorito",
+    "archive": "Arquivar",
+    "restore": "Restaurar",
+    "duplicate": "Duplicar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "open": "Abrir"
+  },
+  "confirmDelete": "Excluir este projeto permanentemente? Esta ação não pode ser desfeita.",
+  "archivedBadge": "Arquivado",
+  "validation": {
+    "nameMin": "O nome deve ter pelo menos 2 caracteres",
+    "keyInvalid": "A chave deve ter 2–6 letras/números e começar com letra"
+  },
+  "toast": {
+    "created": "Projeto criado",
+    "updated": "Projeto atualizado",
+    "archived": "Projeto arquivado",
+    "restored": "Projeto restaurado",
+    "deleted": "Projeto excluído",
+    "duplicated": "Projeto duplicado"
+  }
+}

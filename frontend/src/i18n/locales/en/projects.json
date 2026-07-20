@@ -1,0 +1,53 @@
+{
+  "title": "Projects",
+  "subtitle": "Create and organize your workspaces",
+  "searchPlaceholder": "Search projects…",
+  "create": "New project",
+  "edit": "Edit project",
+  "emptyTitle": "No projects yet",
+  "emptyDescription": "Create your first project to start tracking work.",
+  "emptySearch": "No projects match your search.",
+  "filters": {
+    "active": "Active",
+    "archived": "Archived",
+    "all": "All",
+    "favorites": "Favorites"
+  },
+  "fields": {
+    "name": "Name",
+    "description": "Description",
+    "key": "Key",
+    "color": "Color"
+  },
+  "placeholders": {
+    "name": "Website redesign",
+    "description": "Optional short summary",
+    "key": "WEB"
+  },
+  "actions": {
+    "save": "Save",
+    "create": "Create project",
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite",
+    "archive": "Archive",
+    "restore": "Restore",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "edit": "Edit",
+    "open": "Open"
+  },
+  "confirmDelete": "Delete this project permanently? This cannot be undone.",
+  "archivedBadge": "Archived",
+  "validation": {
+    "nameMin": "Name must be at least 2 characters",
+    "keyInvalid": "Key must be 2–6 letters/numbers, starting with a letter"
+  },
+  "toast": {
+    "created": "Project created",
+    "updated": "Project updated",
+    "archived": "Project archived",
+    "restored": "Project restored",
+    "deleted": "Project deleted",
+    "duplicated": "Project duplicated"
+  }
+}

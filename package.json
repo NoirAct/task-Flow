@@ -1,0 +1,24 @@
+{
+  "name": "taskflow",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:backend": "npm run dev -w @taskflow/backend",
+    "dev:frontend": "npm run dev -w @taskflow/frontend",
+    "dev:api": "npm run dev:backend",
+    "dev:web": "npm run dev:frontend",
+    "build": "npm run build --workspaces --if-present",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run db:migrate -w @taskflow/backend",
+    "db:generate": "npm run db:generate -w @taskflow/backend"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

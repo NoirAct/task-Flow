@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String            @id @default(cuid())
+  email                String            @unique
+  passwordHash         String
+  name                 String
+  avatarUrl            String?
+  bio                  String?
+  preferredLocale      String            @default("pt-BR")
+  preferredTheme       String            @default("system")
+  passwordResetToken   String?           @unique
+  passwordResetExpires DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  refreshTokens        RefreshToken[]
+  ownedProjects        Project[]         @relation("ProjectOwner")
+  projectFavorites     ProjectFavorite[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Project {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  key         String
+  color       String            @default("#1f6feb")
+  ownerId     String
+  owner       User              @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  archivedAt  DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  favorites   ProjectFavorite[]
+
+  @@unique([ownerId, key])
+  @@index([ownerId])
+  @@index([name])
+  @@map("projects")
+}
+
+model ProjectFavorite {
+  userId    String
+  projectId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@index([projectId])
+  @@map("project_favorites")
+}

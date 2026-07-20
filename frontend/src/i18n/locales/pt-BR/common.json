@@ -1,0 +1,33 @@
+{
+  "app": {
+    "name": "TaskFlow",
+    "tagline": "Gestão de projetos para equipes modernas"
+  },
+  "actions": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "continue": "Continuar",
+    "back": "Voltar",
+    "logout": "Sair",
+    "loading": "Carregando…"
+  },
+  "theme": {
+    "light": "Claro",
+    "dark": "Escuro",
+    "system": "Sistema",
+    "label": "Tema"
+  },
+  "language": {
+    "label": "Idioma",
+    "en": "Inglês",
+    "pt": "Português"
+  },
+  "errors": {
+    "generic": "Algo deu errado. Tente novamente.",
+    "network": "Não foi possível conectar ao servidor."
+  },
+  "empty": {
+    "title": "Nada por aqui ainda",
+    "description": "O conteúdo aparecerá quando você criar algo."
+  }
+}
