@@ -1,0 +1,15 @@
+{
+  "title": "Dashboard",
+  "subtitle": "Visão geral do seu trabalho",
+  "pending": "Pendentes",
+  "inProgress": "Em andamento",
+  "done": "Concluídas",
+  "hours": "Horas trabalhadas",
+  "productivity": "Produtividade",
+  "teams": "Times",
+  "projects": "Projetos",
+  "assigned": "Atribuídas a mim",
+  "overdue": "Atrasadas",
+  "activity": "Atividade recente",
+  "noActivity": "Nenhuma atividade recente"
+}

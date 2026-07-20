@@ -15,6 +15,20 @@ enum TaskPriority {
   URGENT
 }
 
+enum TeamRole {
+  ADMIN
+  MANAGER
+  DEVELOPER
+  VIEWER
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
 model User {
   id                   String            @id @default(cuid())
   email                String            @unique
@@ -22,6 +36,7 @@ model User {
   name                 String
   avatarUrl            String?
   bio                  String?
+  skills               String[]          @default([])
   preferredLocale      String            @default("pt-BR")
   preferredTheme       String            @default("system")
   passwordResetToken   String?           @unique
@@ -35,6 +50,11 @@ model User {
   assignedTasks        Task[]            @relation("TaskAssignee")
   comments             Comment[]
   attachments          Attachment[]
+  ownedTeams           Team[]            @relation("TeamOwner")
+  teamMemberships      TeamMember[]
+  sentInvites          TeamInvite[]      @relation("InviteSender")
+  activityLogs         ActivityLog[]
+  notifications        Notification[]
 
   @@map("users")
 }
@@ -52,6 +72,54 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+model Team {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String
+  owner       User         @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  members     TeamMember[]
+  invites     TeamInvite[]
+  projects    Project[]
+
+  @@index([ownerId])
+  @@map("teams")
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      TeamRole @default(DEVELOPER)
+  createdAt DateTime @default(now())
+
+  @@unique([teamId, userId])
+  @@index([userId])
+  @@map("team_members")
+}
+
+model TeamInvite {
+  id          String       @id @default(cuid())
+  teamId      String
+  team        Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  email       String
+  role        TeamRole     @default(DEVELOPER)
+  token       String       @unique
+  status      InviteStatus @default(PENDING)
+  invitedById String
+  invitedBy   User         @relation("InviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  createdAt   DateTime     @default(now())
+
+  @@index([teamId, email])
+  @@index([token])
+  @@map("team_invites")
+}
+
 model Project {
   id          String            @id @default(cuid())
   name        String
@@ -60,15 +128,19 @@ model Project {
   color       String            @default("#1f6feb")
   ownerId     String
   owner       User              @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  teamId      String?
+  team        Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
   archivedAt  DateTime?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   favorites   ProjectFavorite[]
   board       Board?
   labels      Label[]
+  activityLogs ActivityLog[]
 
   @@unique([ownerId, key])
   @@index([ownerId])
+  @@index([teamId])
   @@index([name])
   @@map("projects")
 }
@@ -151,6 +223,7 @@ model Task {
 
   @@index([columnId, position])
   @@index([assigneeId])
+  @@index([dueDate])
   @@map("tasks")
 }
 
@@ -212,4 +285,37 @@ model Attachment {
   @@index([taskId])
   @@index([commentId])
   @@map("attachments")
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId  String?
+  project    Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([projectId, createdAt])
+  @@map("activity_logs")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@map("notifications")
 }

@@ -1,3 +1,4 @@
+import http from "node:http";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
@@ -5,6 +6,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env.js";
 import { errorHandler } from "./middlewares/error-handler.js";
+import { initRealtime } from "./realtime.js";
 import { routes } from "./routes/index.js";
 
 const app = express();
@@ -18,7 +20,7 @@ function isAllowedOrigin(origin?: string) {
   return false;
 }
 
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(
   cors({
     origin(origin, callback) {
@@ -37,6 +39,9 @@ app.use(cookieParser());
 app.use(routes);
 app.use(errorHandler);
 
-app.listen(env.PORT, () => {
+const server = http.createServer(app);
+initRealtime(server);
+
+server.listen(env.PORT, () => {
   console.log(`TaskFlow API running on http://localhost:${env.PORT}`);
 });

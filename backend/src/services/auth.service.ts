@@ -57,6 +57,7 @@ function publicUser(user: {
   name: string;
   avatarUrl: string | null;
   bio?: string | null;
+  skills?: string[];
   preferredLocale: string;
   preferredTheme: string;
   createdAt: Date;
@@ -67,6 +68,7 @@ function publicUser(user: {
     name: user.name,
     avatarUrl: user.avatarUrl,
     bio: user.bio ?? null,
+    skills: user.skills ?? [],
     preferredLocale: user.preferredLocale,
     preferredTheme: user.preferredTheme,
     createdAt: user.createdAt,

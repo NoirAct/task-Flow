@@ -1,0 +1,23 @@
+{
+  "title": "Team",
+  "subtitle": "Manage teams, roles and invitations",
+  "create": "New team",
+  "name": "Team name",
+  "description": "Description",
+  "members": "Members",
+  "invites": "Pending invites",
+  "invite": "Invite member",
+  "email": "Email",
+  "role": "Role",
+  "sendInvite": "Send invite",
+  "empty": "No teams yet",
+  "emptyDescription": "Create a team to collaborate on projects.",
+  "acceptInvite": "Accept invitation",
+  "inviteAccepted": "You joined the team",
+  "roles": {
+    "ADMIN": "Admin",
+    "MANAGER": "Manager",
+    "DEVELOPER": "Developer",
+    "VIEWER": "Viewer"
+  }
+}

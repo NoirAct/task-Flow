@@ -22,6 +22,8 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^2.2.0",
+    "socket.io": "^4.8.3",
+    "ws": "^8.21.1",
     "zod": "^3.25.67"
   },
   "devDependencies": {
@@ -33,6 +35,7 @@
     "@types/morgan": "^1.9.9",
     "@types/multer": "^2.2.0",
     "@types/node": "^22.15.30",
+    "@types/ws": "^8.18.1",
     "prisma": "^6.9.0",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"

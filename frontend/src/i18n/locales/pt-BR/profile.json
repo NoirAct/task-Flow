@@ -1,0 +1,13 @@
+{
+  "title": "Perfil e configurações",
+  "subtitle": "Gerencie as preferências da conta",
+  "name": "Nome",
+  "bio": "Bio",
+  "skills": "Skills",
+  "skillsHint": "Separadas por vírgula",
+  "locale": "Idioma",
+  "theme": "Tema",
+  "projects": "Seus projetos",
+  "save": "Salvar perfil",
+  "saved": "Perfil atualizado"
+}

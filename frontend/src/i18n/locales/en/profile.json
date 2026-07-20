@@ -1,0 +1,13 @@
+{
+  "title": "Profile & settings",
+  "subtitle": "Manage your account preferences",
+  "name": "Name",
+  "bio": "Bio",
+  "skills": "Skills",
+  "skillsHint": "Comma-separated",
+  "locale": "Language",
+  "theme": "Theme",
+  "projects": "Your projects",
+  "save": "Save profile",
+  "saved": "Profile updated"
+}

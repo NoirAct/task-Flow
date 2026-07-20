@@ -5,14 +5,16 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { ThemeProvider } from "@/contexts/theme-context";
 import { AppLayout } from "@/layouts/app-layout";
 import { AuthLayout } from "@/layouts/auth-layout";
+import { BoardPage } from "@/pages/board-page";
+import { CalendarPage } from "@/pages/calendar-page";
 import { DashboardPage } from "@/pages/dashboard-page";
 import { ForgotPasswordPage } from "@/pages/forgot-password-page";
 import { LoginPage } from "@/pages/login-page";
-import { PlaceholderPage } from "@/pages/placeholder-page";
+import { ProfilePage } from "@/pages/profile-page";
 import { ProjectsPage } from "@/pages/projects-page";
-import { BoardPage } from "@/pages/board-page";
 import { RegisterPage } from "@/pages/register-page";
 import { ResetPasswordPage } from "@/pages/reset-password-page";
+import { AcceptInvitePage, TeamPage } from "@/pages/team-page";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,9 +49,10 @@ export default function App() {
                   <Route index element={<DashboardPage />} />
                   <Route path="projects" element={<ProjectsPage />} />
                   <Route path="projects/:projectId/board" element={<BoardPage />} />
-                  <Route path="calendar" element={<PlaceholderPage titleKey="calendar" />} />
-                  <Route path="team" element={<PlaceholderPage titleKey="team" />} />
-                  <Route path="settings" element={<PlaceholderPage titleKey="settings" />} />
+                  <Route path="calendar" element={<CalendarPage />} />
+                  <Route path="team" element={<TeamPage />} />
+                  <Route path="team/invites/:token" element={<AcceptInvitePage />} />
+                  <Route path="settings" element={<ProfilePage />} />
                 </Route>
               </Route>
 

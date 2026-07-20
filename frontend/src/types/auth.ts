@@ -4,6 +4,7 @@ export type User = {
   name: string;
   avatarUrl: string | null;
   bio: string | null;
+  skills: string[];
   preferredLocale: string;
   preferredTheme: string;
   createdAt: string;

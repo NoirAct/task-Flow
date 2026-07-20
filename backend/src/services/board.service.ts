@@ -6,6 +6,8 @@ import {
 } from "../repositories/comment.repository.js";
 import { projectRepository } from "../repositories/project.repository.js";
 import { taskRepository } from "../repositories/task.repository.js";
+import { logActivity } from "./activity.service.js";
+import { notifyUser } from "../realtime.js";
 import { AppError } from "../utils/errors.js";
 import type {
   CreateChecklistItemInput,
@@ -241,6 +243,25 @@ export const boardService = {
       labelIds: input.labelIds,
     });
 
+    await logActivity({
+      userId,
+      projectId: column.board.projectId,
+      action: "task.created",
+      entityType: "task",
+      entityId: task.id,
+      metadata: { title: task.title },
+    });
+
+    if (input.assigneeId && input.assigneeId !== userId) {
+      await notifyUser({
+        userId: input.assigneeId,
+        type: "task_assigned",
+        title: "Task assigned",
+        body: task.title,
+        link: `/app/projects/${column.board.projectId}/board`,
+      });
+    }
+
     return mapTaskCard(task);
   },
 
@@ -418,6 +439,25 @@ export const boardService = {
       authorId: userId,
       body: input.body,
     });
+
+    await logActivity({
+      userId,
+      projectId: task.column.board.projectId,
+      action: "comment.created",
+      entityType: "comment",
+      entityId: comment.id,
+    });
+
+    if (task.assigneeId && task.assigneeId !== userId) {
+      await notifyUser({
+        userId: task.assigneeId,
+        type: "comment",
+        title: "New comment",
+        body: task.title,
+        link: `/app/projects/${task.column.board.projectId}/board`,
+      });
+    }
+
     return mapComment(comment);
   },
 

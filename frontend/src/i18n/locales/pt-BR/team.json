@@ -1,0 +1,23 @@
+{
+  "title": "Equipe",
+  "subtitle": "Gerencie times, papéis e convites",
+  "create": "Novo time",
+  "name": "Nome do time",
+  "description": "Descrição",
+  "members": "Membros",
+  "invites": "Convites pendentes",
+  "invite": "Convidar membro",
+  "email": "E-mail",
+  "role": "Papel",
+  "sendInvite": "Enviar convite",
+  "empty": "Nenhum time ainda",
+  "emptyDescription": "Crie um time para colaborar em projetos.",
+  "acceptInvite": "Aceitar convite",
+  "inviteAccepted": "Você entrou no time",
+  "roles": {
+    "ADMIN": "Administrador",
+    "MANAGER": "Gerente",
+    "DEVELOPER": "Desenvolvedor",
+    "VIEWER": "Visualizador"
+  }
+}

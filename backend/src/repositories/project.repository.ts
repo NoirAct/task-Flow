@@ -11,7 +11,10 @@ export const projectRepository = {
     },
   ) {
     const where: Prisma.ProjectWhereInput = {
-      ownerId: userId,
+      OR: [
+        { ownerId: userId },
+        { team: { members: { some: { userId } } } },
+      ],
     };
 
     if (options.archived === "true") {
@@ -21,10 +24,14 @@ export const projectRepository = {
     }
 
     if (options.search) {
-      where.OR = [
-        { name: { contains: options.search, mode: "insensitive" } },
-        { key: { contains: options.search, mode: "insensitive" } },
-        { description: { contains: options.search, mode: "insensitive" } },
+      where.AND = [
+        {
+          OR: [
+            { name: { contains: options.search, mode: "insensitive" } },
+            { key: { contains: options.search, mode: "insensitive" } },
+            { description: { contains: options.search, mode: "insensitive" } },
+          ],
+        },
       ];
     }
 
@@ -47,7 +54,13 @@ export const projectRepository = {
 
   findByIdForUser(id: string, userId: string) {
     return prisma.project.findFirst({
-      where: { id, ownerId: userId },
+      where: {
+        id,
+        OR: [
+          { ownerId: userId },
+          { team: { members: { some: { userId } } } },
+        ],
+      },
       include: {
         favorites: {
           where: { userId },
