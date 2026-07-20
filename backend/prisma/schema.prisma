@@ -23,6 +23,7 @@ model User {
   refreshTokens        RefreshToken[]
   ownedProjects        Project[]         @relation("ProjectOwner")
   projectFavorites     ProjectFavorite[]
+  createdTasks         Task[]            @relation("TaskCreator")
 
   @@map("users")
 }
@@ -52,6 +53,7 @@ model Project {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   favorites   ProjectFavorite[]
+  board       Board?
 
   @@unique([ownerId, key])
   @@index([ownerId])
@@ -69,4 +71,48 @@ model ProjectFavorite {
   @@id([userId, projectId])
   @@index([projectId])
   @@map("project_favorites")
+}
+
+model Board {
+  id        String   @id @default(cuid())
+  name      String   @default("Main")
+  projectId String   @unique
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  columns   Column[]
+
+  @@map("boards")
+}
+
+model Column {
+  id        String   @id @default(cuid())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name      String
+  key       String
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tasks     Task[]
+
+  @@unique([boardId, key])
+  @@index([boardId, position])
+  @@map("columns")
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  columnId    String
+  column      Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  position    Int
+  createdById String?
+  createdBy   User?    @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([columnId, position])
+  @@map("tasks")
 }

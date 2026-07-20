@@ -1,0 +1,17 @@
+{
+  "title": "Board",
+  "back": "Back to projects",
+  "addTask": "Add task",
+  "taskTitle": "Task title",
+  "taskPlaceholder": "What needs to be done?",
+  "emptyColumn": "No tasks",
+  "deleteTask": "Delete task",
+  "confirmDelete": "Delete this task?",
+  "columns": {
+    "backlog": "Backlog",
+    "todo": "To Do",
+    "in_progress": "In Progress",
+    "review": "Review",
+    "done": "Done"
+  }
+}

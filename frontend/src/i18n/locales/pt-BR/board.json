@@ -1,0 +1,17 @@
+{
+  "title": "Board",
+  "back": "Voltar aos projetos",
+  "addTask": "Adicionar tarefa",
+  "taskTitle": "Título da tarefa",
+  "taskPlaceholder": "O que precisa ser feito?",
+  "emptyColumn": "Sem tarefas",
+  "deleteTask": "Excluir tarefa",
+  "confirmDelete": "Excluir esta tarefa?",
+  "columns": {
+    "backlog": "Backlog",
+    "todo": "A Fazer",
+    "in_progress": "Em Progresso",
+    "review": "Revisão",
+    "done": "Concluído"
+  }
+}

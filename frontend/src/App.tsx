@@ -10,6 +10,7 @@ import { ForgotPasswordPage } from "@/pages/forgot-password-page";
 import { LoginPage } from "@/pages/login-page";
 import { PlaceholderPage } from "@/pages/placeholder-page";
 import { ProjectsPage } from "@/pages/projects-page";
+import { BoardPage } from "@/pages/board-page";
 import { RegisterPage } from "@/pages/register-page";
 import { ResetPasswordPage } from "@/pages/reset-password-page";
 
@@ -45,6 +46,7 @@ export default function App() {
                 <Route path="/app" element={<AppLayout />}>
                   <Route index element={<DashboardPage />} />
                   <Route path="projects" element={<ProjectsPage />} />
+                  <Route path="projects/:projectId/board" element={<BoardPage />} />
                   <Route path="calendar" element={<PlaceholderPage titleKey="calendar" />} />
                   <Route path="team" element={<PlaceholderPage titleKey="team" />} />
                   <Route path="settings" element={<PlaceholderPage titleKey="settings" />} />

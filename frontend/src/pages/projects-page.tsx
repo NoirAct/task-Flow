@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ProjectFormDialog } from "@/features/projects/project-form-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -197,7 +198,10 @@ export function ProjectsPage() {
               className="group relative rounded-lg border border-border bg-surface p-4 transition-colors hover:border-fg-subtle/40"
             >
               <div className="mb-3 flex items-start justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2.5">
+                <Link
+                  to={`/app/projects/${project.id}/board`}
+                  className="flex min-w-0 flex-1 items-center gap-2.5"
+                >
                   <span
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white"
                     style={{ backgroundColor: project.color }}
@@ -208,7 +212,7 @@ export function ProjectsPage() {
                     <h2 className="truncate text-sm font-semibold text-fg">{project.name}</h2>
                     <p className="text-xs text-fg-muted">{project.key}</p>
                   </div>
-                </div>
+                </Link>
 
                 <div className="flex items-center gap-1">
                   <button
@@ -300,9 +304,14 @@ export function ProjectsPage() {
                 </div>
               </div>
 
-              <p className="line-clamp-2 min-h-10 text-sm text-fg-muted">
-                {project.description || "—"}
-              </p>
+              <Link
+                to={`/app/projects/${project.id}/board`}
+                className="mt-1 block"
+              >
+                <p className="line-clamp-2 min-h-10 text-sm text-fg-muted">
+                  {project.description || "—"}
+                </p>
+              </Link>
 
               {project.isArchived ? (
                 <div className="mt-3">
