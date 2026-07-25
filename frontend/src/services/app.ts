@@ -27,6 +27,13 @@ export type Team = {
 };
 
 export type DashboardSummary = {
+  comparison: {
+    periodDays: number;
+    doneCurrent: number;
+    donePrevious: number;
+    activityCurrent: number;
+    activityPrevious: number;
+  };
   projectsCount: number;
   teamCount: number;
   notificationsUnread: number;

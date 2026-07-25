@@ -32,7 +32,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
     if (saved === "light" || saved === "dark" || saved === "system") return saved;
-    return "system";
+    // Dark mode is the default experience
+    return "dark";
   });
 
   const resolvedTheme = theme === "system" ? getSystemTheme() : theme;

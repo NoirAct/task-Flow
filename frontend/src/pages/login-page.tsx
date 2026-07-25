@@ -20,6 +20,7 @@ export function LoginPage() {
   const schema = z.object({
     email: z.string().email(t("validation.emailInvalid")),
     password: z.string().min(1, t("validation.required")),
+    rememberMe: z.boolean(),
   });
 
   type FormValues = z.infer<typeof schema>;
@@ -30,13 +31,13 @@ export function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { email: "", password: "", rememberMe: true },
   });
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await login(values.email, values.password);
+      await login(values.email, values.password, values.rememberMe);
       navigate("/app", { replace: true });
     } catch (error) {
       setFormError(getError(error));
@@ -67,7 +68,15 @@ export function LoginPage() {
           {...register("password")}
         />
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-sm text-fg-muted">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-border accent-(--accent)"
+              {...register("rememberMe")}
+            />
+            {t("fields.rememberMe")}
+          </label>
           <Link to="/forgot-password" className="text-sm text-accent hover:underline">
             {t("links.forgotPassword")}
           </Link>

@@ -1,8 +1,10 @@
 import { apiDownload, apiRequest, apiUpload } from "@/services/api";
 import type {
   Board,
+  BoardColumn,
   BoardTask,
   ChecklistItem,
+  Subtask,
   TaskAttachment,
   TaskComment,
   TaskDetail,
@@ -64,6 +66,56 @@ export const boardApi = {
       method: "POST",
       body: data,
     });
+  },
+
+  createColumn(boardId: string, name: string) {
+    return apiRequest<{ column: BoardColumn }>(`/boards/${boardId}/columns`, {
+      method: "POST",
+      body: { name },
+    });
+  },
+
+  updateColumn(columnId: string, name: string) {
+    return apiRequest<{ column: Omit<BoardColumn, "tasks"> }>(`/columns/${columnId}`, {
+      method: "PATCH",
+      body: { name },
+    });
+  },
+
+  deleteColumn(columnId: string) {
+    return apiRequest<void>(`/columns/${columnId}`, { method: "DELETE" });
+  },
+
+  reorderColumns(boardId: string, columnIds: string[]) {
+    return apiRequest<void>(`/boards/${boardId}/columns/reorder`, {
+      method: "POST",
+      body: { columnIds },
+    });
+  },
+
+  addSubtask(taskId: string, title: string) {
+    return apiRequest<{ subtask: Subtask }>(`/tasks/${taskId}/subtasks`, {
+      method: "POST",
+      body: { title },
+    });
+  },
+
+  updateSubtask(subtaskId: string, data: { title?: string; done?: boolean }) {
+    return apiRequest<{ subtask: Subtask }>(`/subtasks/${subtaskId}`, {
+      method: "PATCH",
+      body: data,
+    });
+  },
+
+  deleteSubtask(subtaskId: string) {
+    return apiRequest<void>(`/subtasks/${subtaskId}`, { method: "DELETE" });
+  },
+
+  setFavorite(taskId: string, favorite: boolean) {
+    return apiRequest<{ taskId: string; isFavorite: boolean }>(
+      `/tasks/${taskId}/favorite`,
+      { method: favorite ? "POST" : "DELETE" },
+    );
   },
 
   addChecklistItem(taskId: string, title: string) {

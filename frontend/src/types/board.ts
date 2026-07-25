@@ -20,6 +20,13 @@ export type ChecklistItem = {
   position: number;
 };
 
+export type Subtask = {
+  id: string;
+  title: string;
+  done: boolean;
+  position: number;
+};
+
 export type TaskAttachment = {
   id: string;
   filename: string;
@@ -58,11 +65,15 @@ export type BoardTask = {
   labels: TaskLabel[];
   checklistTotal: number;
   checklistDone: number;
+  subtasksTotal: number;
+  subtasksDone: number;
+  isFavorite: boolean;
 };
 
 export type TaskDetail = BoardTask & {
   createdBy: UserSummary | null;
   checklist: ChecklistItem[];
+  subtasks: Subtask[];
   comments: TaskComment[];
   attachments: TaskAttachment[];
 };

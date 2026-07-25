@@ -4,6 +4,8 @@ import { prisma } from "../config/database.js";
 const taskDetailInclude = {
   labels: { include: { label: true } },
   checklist: { orderBy: { position: "asc" as const } },
+  subtasks: { orderBy: { position: "asc" as const } },
+  favorites: { select: { userId: true } },
   assignee: { select: { id: true, name: true, email: true, avatarUrl: true } },
   createdBy: { select: { id: true, name: true, email: true, avatarUrl: true } },
   comments: {
@@ -157,6 +159,47 @@ export const taskRepository = {
 
   countChecklist(taskId: string) {
     return prisma.checklistItem.count({ where: { taskId } });
+  },
+
+  createSubtask(data: { taskId: string; title: string; position: number }) {
+    return prisma.subtask.create({ data });
+  },
+
+  findSubtask(id: string) {
+    return prisma.subtask.findUnique({
+      where: { id },
+      include: {
+        task: {
+          include: {
+            column: { include: { board: { select: { projectId: true } } } },
+          },
+        },
+      },
+    });
+  },
+
+  updateSubtask(id: string, data: { title?: string; done?: boolean }) {
+    return prisma.subtask.update({ where: { id }, data });
+  },
+
+  deleteSubtask(id: string) {
+    return prisma.subtask.delete({ where: { id } });
+  },
+
+  countSubtasks(taskId: string) {
+    return prisma.subtask.count({ where: { taskId } });
+  },
+
+  addFavorite(userId: string, taskId: string) {
+    return prisma.taskFavorite.upsert({
+      where: { userId_taskId: { userId, taskId } },
+      create: { userId, taskId },
+      update: {},
+    });
+  },
+
+  removeFavorite(userId: string, taskId: string) {
+    return prisma.taskFavorite.deleteMany({ where: { userId, taskId } });
   },
 
   listLabels(projectId: string) {

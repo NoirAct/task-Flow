@@ -9,6 +9,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
+import { enUS, ptBR } from "date-fns/locale";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -17,22 +18,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { appApi } from "@/services/app";
 import { cn } from "@/utils/cn";
 
-type View = "month" | "week" | "agenda";
+type View = "month" | "week" | "agenda" | "timeline";
 
 export function CalendarPage() {
-  const { t } = useTranslation("calendar");
+  const { t, i18n } = useTranslation("calendar");
   const [view, setView] = useState<View>("month");
   const [cursor, setCursor] = useState(new Date());
+  const dateLocale = i18n.language === "en" ? enUS : ptBR;
+  const weekOpts = { locale: dateLocale };
 
   const range = useMemo(() => {
     if (view === "week") {
-      return { from: startOfWeek(cursor), to: endOfWeek(cursor) };
+      return {
+        from: startOfWeek(cursor, weekOpts),
+        to: endOfWeek(cursor, weekOpts),
+      };
     }
-    if (view === "agenda") {
+    if (view === "agenda" || view === "timeline") {
       return { from: startOfMonth(cursor), to: endOfMonth(addDays(cursor, 60)) };
     }
     return { from: startOfMonth(cursor), to: endOfMonth(cursor) };
-  }, [cursor, view]);
+  }, [cursor, view, dateLocale]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["calendar", range.from.toISOString(), range.to.toISOString()],
@@ -42,17 +48,23 @@ export function CalendarPage() {
   const events = data?.events ?? [];
 
   const monthDays = useMemo(() => {
-    const start = startOfWeek(startOfMonth(cursor));
-    const end = endOfWeek(endOfMonth(cursor));
+    const start = startOfWeek(startOfMonth(cursor), weekOpts);
+    const end = endOfWeek(endOfMonth(cursor), weekOpts);
     const days: Date[] = [];
     for (let day = start; day <= end; day = addDays(day, 1)) days.push(day);
     return days;
-  }, [cursor]);
+  }, [cursor, dateLocale]);
 
   const weekDays = useMemo(() => {
-    const start = startOfWeek(cursor);
+    const start = startOfWeek(cursor, weekOpts);
     return Array.from({ length: 7 }, (_, index) => addDays(start, index));
-  }, [cursor]);
+  }, [cursor, dateLocale]);
+
+  function formatDate(value: Date | string, pattern: string) {
+    return format(typeof value === "string" ? new Date(value) : value, pattern, {
+      locale: dateLocale,
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -62,7 +74,7 @@ export function CalendarPage() {
           <p className="mt-1 text-sm text-fg-muted">{t("subtitle")}</p>
         </div>
         <div className="inline-flex rounded-md border border-border bg-surface p-0.5">
-          {(["month", "week", "agenda"] as const).map((item) => (
+          {(["month", "week", "agenda", "timeline"] as const).map((item) => (
             <button
               key={item}
               type="button"
@@ -86,7 +98,9 @@ export function CalendarPage() {
         >
           ←
         </button>
-        <p className="text-sm font-medium text-fg">{format(cursor, "MMMM yyyy")}</p>
+        <p className="text-sm font-medium text-fg capitalize">
+          {formatDate(cursor, "MMMM yyyy")}
+        </p>
         <button
           type="button"
           className="rounded-md border border-border px-2 py-1 text-sm"
@@ -105,6 +119,67 @@ export function CalendarPage() {
 
       {isLoading ? (
         <Skeleton className="h-96 w-full" />
+      ) : view === "timeline" ? (
+        events.length === 0 ? (
+          <EmptyState title={t("empty")} />
+        ) : (
+          <div className="space-y-3">
+            {Object.entries(
+              events.reduce<Record<string, typeof events>>((groups, event) => {
+                (groups[event.project.id] ??= []).push(event);
+                return groups;
+              }, {}),
+            ).map(([projectId, projectEvents]) => {
+              const sorted = [...projectEvents].sort(
+                (a, b) =>
+                  new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+              );
+              const project = sorted[0].project;
+              return (
+                <div
+                  key={projectId}
+                  className="rounded-lg border border-border bg-surface p-3"
+                >
+                  <Link
+                    to={`/app/projects/${project.id}/board`}
+                    className="mb-2 flex items-center gap-2 text-sm font-semibold text-fg hover:underline"
+                  >
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: project.color }}
+                    />
+                    {project.name}
+                  </Link>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                    {sorted.map((event, index) => (
+                      <div key={event.id} className="flex shrink-0 items-center gap-2">
+                        {index > 0 ? (
+                          <span className="h-px w-6 bg-border" aria-hidden />
+                        ) : null}
+                        <div
+                          className={cn(
+                            "rounded-md border px-2.5 py-1.5",
+                            event.columnKey === "done"
+                              ? "border-border opacity-60"
+                              : "border-border",
+                          )}
+                          style={{ borderLeft: `3px solid ${project.color}` }}
+                        >
+                          <p className="max-w-44 truncate text-xs font-medium text-fg">
+                            {event.title}
+                          </p>
+                          <p className="text-[10px] text-fg-subtle capitalize">
+                            {formatDate(event.dueDate, "dd MMM")}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
       ) : view === "agenda" ? (
         events.length === 0 ? (
           <EmptyState title={t("empty")} />
@@ -118,7 +193,7 @@ export function CalendarPage() {
                 <div>
                   <p className="text-sm font-medium text-fg">{event.title}</p>
                   <p className="text-xs text-fg-muted">
-                    {event.project.key} · {format(new Date(event.dueDate), "PPP")}
+                    {event.project.key} · {formatDate(event.dueDate, "PPP")}
                   </p>
                 </div>
                 <Link
@@ -145,7 +220,7 @@ export function CalendarPage() {
                   view === "month" && !isSameMonth(day, cursor) && "opacity-40",
                 )}
               >
-                <p className="text-xs font-medium text-fg-muted">{format(day, "d")}</p>
+                <p className="text-xs font-medium text-fg-muted">{formatDate(day, "d")}</p>
                 <div className="mt-1 space-y-1">
                   {dayEvents.slice(0, 3).map((event) => (
                     <Link

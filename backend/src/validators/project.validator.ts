@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+export const projectStatusSchema = z.enum([
+  "ACTIVE",
+  "PAUSED",
+  "COMPLETED",
+  "CANCELED",
+]);
+
 export const createProjectSchema = z.object({
   name: z.string().trim().min(2).max(80),
   description: z.string().trim().max(500).optional().nullable(),
@@ -15,6 +22,11 @@ export const createProjectSchema = z.object({
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/)
     .optional(),
+  icon: z.string().trim().max(8).optional().nullable(),
+  status: projectStatusSchema.optional(),
+  startDate: z.string().datetime().optional().nullable(),
+  endDate: z.string().datetime().optional().nullable(),
+  teamId: z.string().min(1).optional().nullable(),
 });
 
 export const updateProjectSchema = z.object({
@@ -24,6 +36,11 @@ export const updateProjectSchema = z.object({
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/)
     .optional(),
+  icon: z.string().trim().max(8).optional().nullable(),
+  status: projectStatusSchema.optional(),
+  startDate: z.string().datetime().optional().nullable(),
+  endDate: z.string().datetime().optional().nullable(),
+  teamId: z.string().min(1).optional().nullable(),
 });
 
 export const listProjectsQuerySchema = z.object({
@@ -33,6 +50,9 @@ export const listProjectsQuerySchema = z.object({
     .optional()
     .default("false"),
   favorites: z.enum(["true", "false"]).optional(),
+  status: projectStatusSchema.optional(),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  perPage: z.coerce.number().int().min(1).max(100).optional().default(12),
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;

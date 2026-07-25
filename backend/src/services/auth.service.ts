@@ -44,10 +44,18 @@ function parseDurationMs(value: string): number {
   return amount * (multipliers[unit] ?? 86_400_000);
 }
 
-async function issueRefreshToken(userId: string) {
+export type SessionMeta = { userAgent?: string | null; ip?: string | null };
+
+async function issueRefreshToken(userId: string, meta?: SessionMeta) {
   const token = crypto.randomBytes(48).toString("hex");
   const expiresAt = new Date(Date.now() + parseDurationMs(env.JWT_REFRESH_EXPIRES_IN));
-  await refreshTokenRepository.create({ token, userId, expiresAt });
+  await refreshTokenRepository.create({
+    token,
+    userId,
+    expiresAt,
+    userAgent: meta?.userAgent ?? null,
+    ip: meta?.ip ?? null,
+  });
   return { token, expiresAt };
 }
 
@@ -78,7 +86,7 @@ function publicUser(user: {
 export const authService = {
   refreshCookieName: REFRESH_COOKIE,
 
-  async register(input: RegisterInput) {
+  async register(input: RegisterInput, meta?: SessionMeta) {
     const existing = await userRepository.findByEmail(input.email);
     if (existing) {
       throw new AppError(409, "Email already registered", "EMAIL_TAKEN");
@@ -92,7 +100,7 @@ export const authService = {
     });
 
     const accessToken = signAccessToken(user);
-    const refresh = await issueRefreshToken(user.id);
+    const refresh = await issueRefreshToken(user.id, meta);
 
     return {
       user: publicUser(user),
@@ -102,7 +110,7 @@ export const authService = {
     };
   },
 
-  async login(input: LoginInput) {
+  async login(input: LoginInput, meta?: SessionMeta) {
     const user = await userRepository.findByEmail(input.email);
     if (!user) {
       throw new AppError(401, "Invalid email or password", "INVALID_CREDENTIALS");
@@ -114,17 +122,18 @@ export const authService = {
     }
 
     const accessToken = signAccessToken(user);
-    const refresh = await issueRefreshToken(user.id);
+    const refresh = await issueRefreshToken(user.id, meta);
 
     return {
       user: publicUser(user),
       accessToken,
       refreshToken: refresh.token,
       refreshExpiresAt: refresh.expiresAt,
+      rememberMe: input.rememberMe ?? true,
     };
   },
 
-  async refresh(refreshToken?: string) {
+  async refresh(refreshToken?: string, meta?: SessionMeta) {
     if (!refreshToken) {
       throw new AppError(401, "Refresh token required", "UNAUTHORIZED");
     }
@@ -137,7 +146,7 @@ export const authService = {
     await refreshTokenRepository.revoke(refreshToken);
 
     const accessToken = signAccessToken(stored.user);
-    const refresh = await issueRefreshToken(stored.user.id);
+    const refresh = await issueRefreshToken(stored.user.id, meta);
 
     return {
       user: publicUser(stored.user),
@@ -150,6 +159,25 @@ export const authService = {
   async logout(refreshToken?: string) {
     if (refreshToken) {
       await refreshTokenRepository.revoke(refreshToken);
+    }
+  },
+
+  async listSessions(userId: string, currentToken?: string) {
+    const sessions = await refreshTokenRepository.listActiveForUser(userId);
+    return sessions.map((session) => ({
+      id: session.id,
+      userAgent: session.userAgent,
+      ip: session.ip,
+      createdAt: session.createdAt,
+      expiresAt: session.expiresAt,
+      current: currentToken != null && session.token === currentToken,
+    }));
+  },
+
+  async revokeSession(userId: string, sessionId: string) {
+    const result = await refreshTokenRepository.revokeById(userId, sessionId);
+    if (result.count === 0) {
+      throw new AppError(404, "Session not found", "NOT_FOUND");
     }
   },
 

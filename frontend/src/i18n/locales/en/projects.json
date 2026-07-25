@@ -11,13 +11,29 @@
     "active": "Active",
     "archived": "Archived",
     "all": "All",
-    "favorites": "Favorites"
+    "favorites": "Favorites",
+    "allStatuses": "All statuses"
   },
   "fields": {
     "name": "Name",
     "description": "Description",
     "key": "Key",
-    "color": "Color"
+    "color": "Color",
+    "icon": "Icon",
+    "status": "Status",
+    "startDate": "Start",
+    "endDate": "End"
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "PAUSED": "Paused",
+    "COMPLETED": "Completed",
+    "CANCELED": "Canceled"
+  },
+  "pagination": {
+    "summary": "Page {{page}} of {{totalPages}} · {{total}} projects",
+    "previous": "Previous",
+    "next": "Next"
   },
   "placeholders": {
     "name": "Website redesign",

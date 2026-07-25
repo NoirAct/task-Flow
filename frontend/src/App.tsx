@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "react-hot-toast";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { GuestRoute, ProtectedRoute } from "@/components/protected-route";
 import { AuthProvider } from "@/contexts/auth-context";
@@ -29,6 +30,17 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: "var(--surface)",
+              color: "var(--fg)",
+              border: "1px solid var(--border)",
+              fontSize: "0.875rem",
+            },
+          }}
+        />
         <AuthProvider>
           <BrowserRouter>
             <Routes>

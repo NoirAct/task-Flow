@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Monitor } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +12,25 @@ import { useAuth } from "@/contexts/auth-context";
 import { useTheme } from "@/contexts/theme-context";
 import { LOCALE_STORAGE_KEY } from "@/i18n";
 import { appApi } from "@/services/app";
+import { authApi } from "@/services/auth";
+
+function describeUserAgent(userAgent: string | null) {
+  if (!userAgent) return "—";
+  const browser =
+    /firefox/i.test(userAgent) ? "Firefox"
+    : /edg/i.test(userAgent) ? "Edge"
+    : /chrome/i.test(userAgent) ? "Chrome"
+    : /safari/i.test(userAgent) ? "Safari"
+    : "Browser";
+  const os =
+    /mac os/i.test(userAgent) ? "macOS"
+    : /windows/i.test(userAgent) ? "Windows"
+    : /linux/i.test(userAgent) ? "Linux"
+    : /android/i.test(userAgent) ? "Android"
+    : /iphone|ipad/i.test(userAgent) ? "iOS"
+    : "";
+  return os ? `${browser} · ${os}` : browser;
+}
 
 export function ProfilePage() {
   const { t, i18n } = useTranslation(["profile", "common"]);
@@ -31,6 +53,19 @@ export function ProfilePage() {
   const projectsQuery = useQuery({
     queryKey: ["profile-projects"],
     queryFn: appApi.profileProjects,
+  });
+
+  const sessionsQuery = useQuery({
+    queryKey: ["auth-sessions"],
+    queryFn: authApi.listSessions,
+  });
+
+  const revokeSessionMutation = useMutation({
+    mutationFn: authApi.revokeSession,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["auth-sessions"] });
+      toast.success(t("profile:sessions.revoked"));
+    },
   });
 
   const mutation = useMutation({
@@ -115,6 +150,49 @@ export function ProfilePage() {
           </Button>
           {saved ? <span className="text-sm text-success">{t("profile:saved")}</span> : null}
         </div>
+      </div>
+
+      <div className="rounded-lg border border-border bg-surface p-5">
+        <h2 className="mb-1 text-sm font-semibold">{t("profile:sessions.title")}</h2>
+        <p className="mb-4 text-xs text-fg-muted">{t("profile:sessions.subtitle")}</p>
+        <ul className="space-y-2">
+          {(sessionsQuery.data?.sessions ?? []).map((session) => (
+            <li
+              key={session.id}
+              className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <Monitor className="h-4 w-4 shrink-0 text-fg-subtle" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-fg">
+                    {describeUserAgent(session.userAgent)}
+                    {session.ip ? (
+                      <span className="ml-2 text-xs text-fg-subtle">{session.ip}</span>
+                    ) : null}
+                  </p>
+                  <p className="text-xs text-fg-muted">
+                    {new Date(session.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              {session.current ? (
+                <Badge>{t("profile:sessions.current")}</Badge>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={revokeSessionMutation.isPending}
+                  onClick={() => revokeSessionMutation.mutate(session.id)}
+                >
+                  {t("profile:sessions.revoke")}
+                </Button>
+              )}
+            </li>
+          ))}
+          {sessionsQuery.data?.sessions.length === 0 ? (
+            <li className="text-sm text-fg-muted">{t("profile:sessions.empty")}</li>
+          ) : null}
+        </ul>
       </div>
 
       <div className="rounded-lg border border-border bg-surface p-5">

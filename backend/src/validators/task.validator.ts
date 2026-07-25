@@ -38,6 +38,27 @@ export const updateChecklistItemSchema = z.object({
   done: z.boolean().optional(),
 });
 
+export const createSubtaskSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+});
+
+export const updateSubtaskSchema = z.object({
+  title: z.string().trim().min(1).max(200).optional(),
+  done: z.boolean().optional(),
+});
+
+export const createColumnSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+});
+
+export const updateColumnSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+});
+
+export const reorderColumnsSchema = z.object({
+  columnIds: z.array(z.string().min(1)).min(1),
+});
+
 export const createLabelSchema = z.object({
   name: z.string().trim().min(1).max(40),
   color: z
@@ -52,3 +73,8 @@ export type MoveTaskInput = z.infer<typeof moveTaskSchema>;
 export type CreateChecklistItemInput = z.infer<typeof createChecklistItemSchema>;
 export type UpdateChecklistItemInput = z.infer<typeof updateChecklistItemSchema>;
 export type CreateLabelInput = z.infer<typeof createLabelSchema>;
+export type CreateSubtaskInput = z.infer<typeof createSubtaskSchema>;
+export type UpdateSubtaskInput = z.infer<typeof updateSubtaskSchema>;
+export type CreateColumnInput = z.infer<typeof createColumnSchema>;
+export type UpdateColumnInput = z.infer<typeof updateColumnSchema>;
+export type ReorderColumnsInput = z.infer<typeof reorderColumnsSchema>;

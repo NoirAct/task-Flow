@@ -1,8 +1,35 @@
 import { useQuery } from "@tanstack/react-query";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/auth-context";
 import { appApi } from "@/services/app";
+import { cn } from "@/utils/cn";
+
+function TrendBadge({ current, previous }: { current: number; previous: number }) {
+  const { t } = useTranslation("dashboard");
+  if (previous === 0 && current === 0) return null;
+  const delta =
+    previous === 0 ? 100 : Math.round(((current - previous) / previous) * 100);
+  const positive = delta >= 0;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+        positive ? "bg-success-soft text-success" : "bg-danger-soft text-danger",
+      )}
+      title={t("comparisonHint")}
+    >
+      {positive ? (
+        <TrendingUp className="h-3 w-3" />
+      ) : (
+        <TrendingDown className="h-3 w-3" />
+      )}
+      {positive ? "+" : ""}
+      {delta}%
+    </span>
+  );
+}
 
 export function DashboardPage() {
   const { t } = useTranslation(["dashboard", "common"]);
@@ -27,10 +54,21 @@ export function DashboardPage() {
     );
   }
 
-  const cards = [
+  const comparison = summary.comparison;
+
+  const cards: Array<{ label: string; value: number | string; trend?: React.ReactNode }> = [
     { label: t("dashboard:pending"), value: summary.tasks.pending },
     { label: t("dashboard:inProgress"), value: summary.tasks.inProgress },
-    { label: t("dashboard:done"), value: summary.tasks.done },
+    {
+      label: t("dashboard:done"),
+      value: summary.tasks.done,
+      trend: (
+        <TrendBadge
+          current={comparison.doneCurrent}
+          previous={comparison.donePrevious}
+        />
+      ),
+    },
     { label: t("dashboard:hours"), value: summary.hoursWorked },
     { label: t("dashboard:productivity"), value: `${summary.productivity}%` },
     { label: t("dashboard:overdue"), value: summary.tasks.overdue },
@@ -49,7 +87,10 @@ export function DashboardPage() {
         {cards.map((card) => (
           <div key={card.label} className="rounded-lg border border-border bg-surface p-4">
             <p className="text-sm text-fg-muted">{card.label}</p>
-            <p className="mt-2 text-3xl font-semibold tabular-nums text-fg">{card.value}</p>
+            <div className="mt-2 flex items-center gap-2">
+              <p className="text-3xl font-semibold tabular-nums text-fg">{card.value}</p>
+              {card.trend}
+            </div>
           </div>
         ))}
       </div>
@@ -70,7 +111,13 @@ export function DashboardPage() {
       </div>
 
       <div className="rounded-lg border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-semibold text-fg">{t("dashboard:activity")}</h2>
+        <div className="mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-fg">{t("dashboard:activity")}</h2>
+          <TrendBadge
+            current={comparison.activityCurrent}
+            previous={comparison.activityPrevious}
+          />
+        </div>
         {summary.activity.length === 0 ? (
           <p className="text-sm text-fg-muted">{t("dashboard:noActivity")}</p>
         ) : (

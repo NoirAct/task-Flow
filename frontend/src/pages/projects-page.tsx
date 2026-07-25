@@ -10,19 +10,22 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ProjectFormDialog } from "@/features/projects/project-form-dialog";
+import toast from "react-hot-toast";
+import { ProjectFormDialog, type ProjectFormValues } from "@/features/projects/project-form-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { projectsApi } from "@/services/projects";
-import type { Project } from "@/types/project";
+import type { Project, ProjectStatus } from "@/types/project";
 import { cn } from "@/utils/cn";
 
 type ArchiveFilter = "false" | "true" | "all";
+
+const PER_PAGE = 12;
 
 export function ProjectsPage() {
   const { t } = useTranslation(["projects", "common"]);
@@ -30,17 +33,26 @@ export function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [archived, setArchived] = useState<ArchiveFilter>("false");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [status, setStatus] = useState<ProjectStatus | "">("");
+  const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Project | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, archived, favoritesOnly, status]);
 
   const listParams = useMemo(
     () => ({
       search: search.trim() || undefined,
       archived,
       favorites: favoritesOnly ? ("true" as const) : undefined,
+      status: status || undefined,
+      page,
+      perPage: PER_PAGE,
     }),
-    [search, archived, favoritesOnly],
+    [search, archived, favoritesOnly, status, page],
   );
 
   const { data, isLoading, isFetching } = useQuery({
@@ -49,23 +61,34 @@ export function ProjectsPage() {
   });
 
   const projects = data?.projects ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["projects"] });
 
   const createMutation = useMutation({
     mutationFn: projectsApi.create,
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast.success(t("projects:toast.created"));
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, ...body }: { id: string; name?: string; description?: string | null; color?: string }) =>
+    mutationFn: ({ id, ...body }: { id: string } & ProjectFormValues) =>
       projectsApi.update(id, body),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast.success(t("projects:toast.updated"));
+    },
   });
 
   const archiveMutation = useMutation({
     mutationFn: projectsApi.archive,
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast.success(t("projects:toast.archived"));
+    },
   });
 
   const restoreMutation = useMutation({
@@ -75,7 +98,10 @@ export function ProjectsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: projectsApi.remove,
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast.success(t("projects:toast.deleted"));
+    },
   });
 
   const favoriteMutation = useMutation({
@@ -100,19 +126,10 @@ export function ProjectsPage() {
     setMenuOpenId(null);
   }
 
-  async function handleFormSubmit(values: {
-    name: string;
-    description?: string | null;
-    key?: string;
-    color: string;
-  }) {
+  async function handleFormSubmit(values: ProjectFormValues) {
     if (editing) {
-      await updateMutation.mutateAsync({
-        id: editing.id,
-        name: values.name,
-        description: values.description,
-        color: values.color,
-      });
+      const { key: _key, ...rest } = values;
+      await updateMutation.mutateAsync({ id: editing.id, ...rest });
     } else {
       await createMutation.mutateAsync(values);
     }
@@ -164,6 +181,19 @@ export function ProjectsPage() {
           ))}
         </div>
 
+        <select
+          value={status}
+          onChange={(event) => setStatus(event.target.value as ProjectStatus | "")}
+          className="h-9 rounded-md border border-border bg-surface px-2 text-sm text-fg outline-none focus:border-accent"
+        >
+          <option value="">{t("projects:filters.allStatuses")}</option>
+          {(["ACTIVE", "PAUSED", "COMPLETED", "CANCELED"] as const).map((value) => (
+            <option key={value} value={value}>
+              {t(`projects:status.${value}`)}
+            </option>
+          ))}
+        </select>
+
         <Button
           variant={favoritesOnly ? "primary" : "secondary"}
           size="sm"
@@ -203,10 +233,13 @@ export function ProjectsPage() {
                   className="flex min-w-0 flex-1 items-center gap-2.5"
                 >
                   <span
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white"
+                    className={cn(
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-md font-bold text-white",
+                      project.icon ? "text-lg" : "text-xs",
+                    )}
                     style={{ backgroundColor: project.color }}
                   >
-                    {project.key.slice(0, 3)}
+                    {project.icon || project.key.slice(0, 3)}
                   </span>
                   <div className="min-w-0">
                     <h2 className="truncate text-sm font-semibold text-fg">{project.name}</h2>
@@ -313,15 +346,44 @@ export function ProjectsPage() {
                 </p>
               </Link>
 
-              {project.isArchived ? (
-                <div className="mt-3">
-                  <Badge>{t("projects:archivedBadge")}</Badge>
+              {project.isArchived || project.status !== "ACTIVE" ? (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {project.status !== "ACTIVE" ? (
+                    <Badge>{t(`projects:status.${project.status}`)}</Badge>
+                  ) : null}
+                  {project.isArchived ? <Badge>{t("projects:archivedBadge")}</Badge> : null}
                 </div>
               ) : null}
             </article>
           ))}
         </div>
       )}
+
+      {totalPages > 1 ? (
+        <div className="flex items-center justify-between border-t border-border pt-4">
+          <p className="text-xs text-fg-muted">
+            {t("projects:pagination.summary", { page, totalPages, total })}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((prev) => prev - 1)}
+            >
+              {t("projects:pagination.previous")}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((prev) => prev + 1)}
+            >
+              {t("projects:pagination.next")}
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       <ProjectFormDialog
         open={dialogOpen}

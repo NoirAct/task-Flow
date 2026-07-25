@@ -15,6 +15,13 @@ enum TaskPriority {
   URGENT
 }
 
+enum ProjectStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELED
+}
+
 enum TeamRole {
   ADMIN
   MANAGER
@@ -55,6 +62,7 @@ model User {
   sentInvites          TeamInvite[]      @relation("InviteSender")
   activityLogs         ActivityLog[]
   notifications        Notification[]
+  taskFavorites        TaskFavorite[]
 
   @@map("users")
 }
@@ -64,6 +72,8 @@ model RefreshToken {
   token     String    @unique
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent String?
+  ip        String?
   expiresAt DateTime
   createdAt DateTime  @default(now())
   revokedAt DateTime?
@@ -126,6 +136,10 @@ model Project {
   description String?
   key         String
   color       String            @default("#1f6feb")
+  icon        String?
+  status      ProjectStatus     @default(ACTIVE)
+  startDate   DateTime?
+  endDate     DateTime?
   ownerId     String
   owner       User              @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   teamId      String?
@@ -220,11 +234,39 @@ model Task {
   checklist        ChecklistItem[]
   comments         Comment[]
   attachments      Attachment[]
+  subtasks         Subtask[]
+  favorites        TaskFavorite[]
 
   @@index([columnId, position])
   @@index([assigneeId])
   @@index([dueDate])
   @@map("tasks")
+}
+
+model Subtask {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title     String
+  done      Boolean  @default(false)
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([taskId, position])
+  @@map("subtasks")
+}
+
+model TaskFavorite {
+  userId    String
+  taskId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@id([userId, taskId])
+  @@index([taskId])
+  @@map("task_favorites")
 }
 
 model TaskLabel {

@@ -11,13 +11,29 @@
     "active": "Ativos",
     "archived": "Arquivados",
     "all": "Todos",
-    "favorites": "Favoritos"
+    "favorites": "Favoritos",
+    "allStatuses": "Todos os status"
   },
   "fields": {
     "name": "Nome",
     "description": "Descrição",
     "key": "Chave",
-    "color": "Cor"
+    "color": "Cor",
+    "icon": "Ícone",
+    "status": "Status",
+    "startDate": "Início",
+    "endDate": "Término"
+  },
+  "status": {
+    "ACTIVE": "Ativo",
+    "PAUSED": "Pausado",
+    "COMPLETED": "Concluído",
+    "CANCELED": "Cancelado"
+  },
+  "pagination": {
+    "summary": "Página {{page}} de {{totalPages}} · {{total}} projetos",
+    "previous": "Anterior",
+    "next": "Próxima"
   },
   "placeholders": {
     "name": "Redesign do site",

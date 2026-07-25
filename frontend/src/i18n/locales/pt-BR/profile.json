@@ -9,5 +9,13 @@
   "theme": "Tema",
   "projects": "Seus projetos",
   "save": "Salvar perfil",
-  "saved": "Perfil atualizado"
+  "saved": "Perfil atualizado",
+  "sessions": {
+    "title": "Sessões ativas",
+    "subtitle": "Dispositivos conectados à sua conta",
+    "current": "Sessão atual",
+    "revoke": "Encerrar",
+    "revoked": "Sessão encerrada",
+    "empty": "Nenhuma sessão ativa"
+  }
 }

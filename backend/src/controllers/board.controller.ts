@@ -15,6 +15,79 @@ export const boardController = {
     return res.json({ task });
   },
 
+  async createColumn(req: Request, res: Response) {
+    const column = await boardService.createColumn(
+      req.user!.sub,
+      req.params.boardId as string,
+      req.body,
+    );
+    return res.status(201).json({ column });
+  },
+
+  async updateColumn(req: Request, res: Response) {
+    const column = await boardService.updateColumn(
+      req.user!.sub,
+      req.params.columnId as string,
+      req.body,
+    );
+    return res.json({ column });
+  },
+
+  async deleteColumn(req: Request, res: Response) {
+    await boardService.deleteColumn(req.user!.sub, req.params.columnId as string);
+    return res.status(204).send();
+  },
+
+  async reorderColumns(req: Request, res: Response) {
+    await boardService.reorderColumns(
+      req.user!.sub,
+      req.params.boardId as string,
+      req.body.columnIds,
+    );
+    return res.status(204).send();
+  },
+
+  async addSubtask(req: Request, res: Response) {
+    const subtask = await boardService.addSubtask(
+      req.user!.sub,
+      req.params.taskId as string,
+      req.body,
+    );
+    return res.status(201).json({ subtask });
+  },
+
+  async updateSubtask(req: Request, res: Response) {
+    const subtask = await boardService.updateSubtask(
+      req.user!.sub,
+      req.params.subtaskId as string,
+      req.body,
+    );
+    return res.json({ subtask });
+  },
+
+  async deleteSubtask(req: Request, res: Response) {
+    await boardService.deleteSubtask(req.user!.sub, req.params.subtaskId as string);
+    return res.status(204).send();
+  },
+
+  async favoriteTask(req: Request, res: Response) {
+    const result = await boardService.setTaskFavorite(
+      req.user!.sub,
+      req.params.taskId as string,
+      true,
+    );
+    return res.json(result);
+  },
+
+  async unfavoriteTask(req: Request, res: Response) {
+    const result = await boardService.setTaskFavorite(
+      req.user!.sub,
+      req.params.taskId as string,
+      false,
+    );
+    return res.json(result);
+  },
+
   async createTask(req: Request, res: Response) {
     const task = await boardService.createTask(req.user!.sub, req.body);
     return res.status(201).json({ task });

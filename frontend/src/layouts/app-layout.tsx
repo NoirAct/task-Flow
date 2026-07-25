@@ -13,7 +13,7 @@ export function AppLayout() {
       <div className="flex h-screen overflow-hidden bg-canvas">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          <Navbar onOpenCommand={() => setCommandOpen(true)} />
+          <Navbar />
           <main className="flex-1 overflow-auto p-6">
             <Outlet />
           </main>

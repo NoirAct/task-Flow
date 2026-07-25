@@ -1,13 +1,16 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, ProjectStatus } from "@prisma/client";
 import { prisma } from "../config/database.js";
 
 export const projectRepository = {
-  findManyForUser(
+  async findManyForUser(
     userId: string,
     options: {
       search?: string;
       archived: "true" | "false" | "all";
       favoritesOnly?: boolean;
+      status?: ProjectStatus;
+      page?: number;
+      perPage?: number;
     },
   ) {
     const where: Prisma.ProjectWhereInput = {
@@ -39,17 +42,31 @@ export const projectRepository = {
       where.favorites = { some: { userId } };
     }
 
-    return prisma.project.findMany({
-      where,
-      include: {
-        favorites: {
-          where: { userId },
-          select: { userId: true },
+    if (options.status) {
+      where.status = options.status;
+    }
+
+    const page = options.page ?? 1;
+    const perPage = options.perPage ?? 12;
+
+    const [projects, total] = await prisma.$transaction([
+      prisma.project.findMany({
+        where,
+        include: {
+          favorites: {
+            where: { userId },
+            select: { userId: true },
+          },
+          _count: { select: { favorites: true } },
         },
-        _count: { select: { favorites: true } },
-      },
-      orderBy: [{ archivedAt: "asc" }, { updatedAt: "desc" }],
-    });
+        orderBy: [{ archivedAt: "asc" }, { updatedAt: "desc" }],
+        skip: (page - 1) * perPage,
+        take: perPage,
+      }),
+      prisma.project.count({ where }),
+    ]);
+
+    return { projects, total, page, perPage };
   },
 
   findByIdForUser(id: string, userId: string) {
@@ -82,6 +99,11 @@ export const projectRepository = {
     key: string;
     color: string;
     ownerId: string;
+    icon?: string | null;
+    status?: ProjectStatus;
+    startDate?: Date | null;
+    endDate?: Date | null;
+    teamId?: string | null;
   }) {
     return prisma.project.create({
       data: {
@@ -117,6 +139,11 @@ export const projectRepository = {
       description?: string | null;
       color?: string;
       archivedAt?: Date | null;
+      icon?: string | null;
+      status?: ProjectStatus;
+      startDate?: Date | null;
+      endDate?: Date | null;
+      teamId?: string | null;
     },
   ) {
     return prisma.project.update({

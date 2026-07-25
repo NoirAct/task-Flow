@@ -1,4 +1,4 @@
-import { Bell, Search } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -10,30 +10,14 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/auth-context";
 import { useNotifications } from "@/contexts/notifications-context";
 
-type NavbarProps = {
-  onOpenCommand: () => void;
-};
-
-export function Navbar({ onOpenCommand }: NavbarProps) {
+export function Navbar() {
   const { t } = useTranslation(["nav", "common"]);
   const { user, logout } = useAuth();
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-surface px-4">
-      <button
-        type="button"
-        onClick={onOpenCommand}
-        className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border bg-canvas px-3 py-2 text-left text-sm text-fg-subtle hover:border-fg-subtle/50"
-      >
-        <Search className="h-4 w-4 shrink-0" />
-        <span className="truncate">{t("nav:search")}</span>
-        <kbd className="ml-auto hidden rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px] text-fg-subtle sm:inline">
-          ⌘K
-        </kbd>
-      </button>
-
+    <header className="flex h-14 shrink-0 items-center justify-end gap-4 border-b border-border bg-surface px-4">
       <div className="flex items-center gap-1.5">
         <LanguageSwitcher />
         <ThemeSwitcher />

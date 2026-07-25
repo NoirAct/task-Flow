@@ -66,7 +66,43 @@ export const dashboardService = {
         task.column.key !== "done",
     ).length;
 
+    const periodMs = 30 * 24 * 60 * 60 * 1000;
+    const currentStart = new Date(Date.now() - periodMs);
+    const previousStart = new Date(Date.now() - 2 * periodMs);
+    const doneWhere = {
+      column: { key: "done", board: { projectId: { in: projectIds } } },
+    };
+    const activityWhere = {
+      OR: [{ userId }, { projectId: { in: projectIds } }],
+    };
+
+    const [doneCurrent, donePrevious, activityCurrent, activityPrevious] =
+      await Promise.all([
+        prisma.task.count({
+          where: { ...doneWhere, updatedAt: { gte: currentStart } },
+        }),
+        prisma.task.count({
+          where: { ...doneWhere, updatedAt: { gte: previousStart, lt: currentStart } },
+        }),
+        prisma.activityLog.count({
+          where: { ...activityWhere, createdAt: { gte: currentStart } },
+        }),
+        prisma.activityLog.count({
+          where: {
+            ...activityWhere,
+            createdAt: { gte: previousStart, lt: currentStart },
+          },
+        }),
+      ]);
+
     return {
+      comparison: {
+        periodDays: 30,
+        doneCurrent,
+        donePrevious,
+        activityCurrent,
+        activityPrevious,
+      },
       projectsCount,
       teamCount,
       notificationsUnread,

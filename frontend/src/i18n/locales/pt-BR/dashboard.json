@@ -11,5 +11,6 @@
   "assigned": "Atribuídas a mim",
   "overdue": "Atrasadas",
   "activity": "Atividade recente",
-  "noActivity": "Nenhuma atividade recente"
+  "noActivity": "Nenhuma atividade recente",
+  "comparisonHint": "Comparado aos 30 dias anteriores"
 }

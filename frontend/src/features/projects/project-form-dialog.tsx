@@ -6,21 +6,36 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import type { Project } from "@/types/project";
+import type { Project, ProjectStatus } from "@/types/project";
 
 const COLORS = ["#1f6feb", "#1a7f37", "#bf8700", "#cf222e", "#8250df", "#0550ae"];
+const STATUSES: ProjectStatus[] = ["ACTIVE", "PAUSED", "COMPLETED", "CANCELED"];
+
+export type ProjectFormValues = {
+  name: string;
+  description?: string | null;
+  key?: string;
+  color: string;
+  icon?: string | null;
+  status?: ProjectStatus;
+  startDate?: string | null;
+  endDate?: string | null;
+};
 
 type ProjectFormDialogProps = {
   open: boolean;
   onClose: () => void;
   project?: Project | null;
-  onSubmit: (values: {
-    name: string;
-    description?: string | null;
-    key?: string;
-    color: string;
-  }) => Promise<void>;
+  onSubmit: (values: ProjectFormValues) => Promise<void>;
 };
+
+function toDateInput(value: string | null | undefined) {
+  return value ? value.slice(0, 10) : "";
+}
+
+function toIsoOrNull(value: string | undefined) {
+  return value ? new Date(`${value}T12:00:00`).toISOString() : null;
+}
 
 export function ProjectFormDialog({
   open,
@@ -42,6 +57,10 @@ export function ProjectFormDialog({
         t("validation.keyInvalid"),
       ),
     color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+    icon: z.string().max(8).optional(),
+    status: z.enum(["ACTIVE", "PAUSED", "COMPLETED", "CANCELED"]),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
   });
 
   type FormValues = z.infer<typeof schema>;
@@ -60,6 +79,10 @@ export function ProjectFormDialog({
       description: "",
       key: "",
       color: COLORS[0],
+      icon: "",
+      status: "ACTIVE",
+      startDate: "",
+      endDate: "",
     },
   });
 
@@ -72,6 +95,10 @@ export function ProjectFormDialog({
       description: project?.description ?? "",
       key: project?.key ?? "",
       color: project?.color ?? COLORS[0],
+      icon: project?.icon ?? "",
+      status: project?.status ?? "ACTIVE",
+      startDate: toDateInput(project?.startDate),
+      endDate: toDateInput(project?.endDate),
     });
   }, [open, project, reset]);
 
@@ -81,6 +108,10 @@ export function ProjectFormDialog({
       description: values.description?.trim() ? values.description.trim() : null,
       key: isEdit ? undefined : values.key?.trim() ? values.key.trim().toUpperCase() : undefined,
       color: values.color,
+      icon: values.icon?.trim() ? values.icon.trim() : null,
+      status: values.status,
+      startDate: toIsoOrNull(values.startDate),
+      endDate: toIsoOrNull(values.endDate),
     });
     onClose();
   });
@@ -88,12 +119,20 @@ export function ProjectFormDialog({
   return (
     <Dialog open={open} onClose={onClose} title={isEdit ? t("edit") : t("create")}>
       <form className="flex flex-col gap-4" onSubmit={submit} noValidate>
-        <Input
-          label={t("fields.name")}
-          placeholder={t("placeholders.name")}
-          error={errors.name?.message}
-          {...register("name")}
-        />
+        <div className="grid grid-cols-[1fr_5.5rem] gap-3">
+          <Input
+            label={t("fields.name")}
+            placeholder={t("placeholders.name")}
+            error={errors.name?.message}
+            {...register("name")}
+          />
+          <Input
+            label={t("fields.icon")}
+            placeholder="🚀"
+            maxLength={8}
+            {...register("icon")}
+          />
+        </div>
 
         {!isEdit ? (
           <Input
@@ -112,6 +151,24 @@ export function ProjectFormDialog({
             {...register("description")}
           />
         </label>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-fg-muted">{t("fields.status")}</span>
+            <select
+              className="h-9 rounded-md border border-border bg-surface px-2 text-sm text-fg outline-none focus:border-accent"
+              {...register("status")}
+            >
+              {STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {t(`status.${status}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Input type="date" label={t("fields.startDate")} {...register("startDate")} />
+          <Input type="date" label={t("fields.endDate")} {...register("endDate")} />
+        </div>
 
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-fg-muted">{t("fields.color")}</span>

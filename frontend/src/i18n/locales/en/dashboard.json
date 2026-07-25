@@ -11,5 +11,6 @@
   "assigned": "Assigned to me",
   "overdue": "Overdue",
   "activity": "Recent activity",
-  "noActivity": "No recent activity"
+  "noActivity": "No recent activity",
+  "comparisonHint": "Compared to the previous 30 days"
 }

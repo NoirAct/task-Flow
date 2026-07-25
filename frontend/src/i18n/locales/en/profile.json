@@ -9,5 +9,13 @@
   "theme": "Theme",
   "projects": "Your projects",
   "save": "Save profile",
-  "saved": "Profile updated"
+  "saved": "Profile updated",
+  "sessions": {
+    "title": "Active sessions",
+    "subtitle": "Devices signed in to your account",
+    "current": "Current session",
+    "revoke": "Sign out",
+    "revoked": "Session ended",
+    "empty": "No active sessions"
+  }
 }

@@ -50,7 +50,7 @@ export function CommandPalette({ open: controlledOpen, onOpenChange }: CommandPa
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/40 p-4 pt-[15vh]">
+    <div className="fixed inset-0 z-60 flex items-start justify-center bg-black/40 p-4 pt-[15vh]">
       <button
         type="button"
         className="absolute inset-0"

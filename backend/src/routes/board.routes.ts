@@ -9,10 +9,15 @@ import {
 } from "../validators/comment.validator.js";
 import {
   createChecklistItemSchema,
+  createColumnSchema,
   createLabelSchema,
+  createSubtaskSchema,
   createTaskSchema,
   moveTaskSchema,
+  reorderColumnsSchema,
   updateChecklistItemSchema,
+  updateColumnSchema,
+  updateSubtaskSchema,
   updateTaskSchema,
 } from "../validators/task.validator.js";
 
@@ -35,6 +40,62 @@ boardRoutes.post(
     boardController.createLabel(req, res).catch(next);
   },
 );
+
+boardRoutes.post(
+  "/boards/:boardId/columns",
+  validate(createColumnSchema),
+  (req, res, next) => {
+    boardController.createColumn(req, res).catch(next);
+  },
+);
+
+boardRoutes.post(
+  "/boards/:boardId/columns/reorder",
+  validate(reorderColumnsSchema),
+  (req, res, next) => {
+    boardController.reorderColumns(req, res).catch(next);
+  },
+);
+
+boardRoutes.patch(
+  "/columns/:columnId",
+  validate(updateColumnSchema),
+  (req, res, next) => {
+    boardController.updateColumn(req, res).catch(next);
+  },
+);
+
+boardRoutes.delete("/columns/:columnId", (req, res, next) => {
+  boardController.deleteColumn(req, res).catch(next);
+});
+
+boardRoutes.post(
+  "/tasks/:taskId/subtasks",
+  validate(createSubtaskSchema),
+  (req, res, next) => {
+    boardController.addSubtask(req, res).catch(next);
+  },
+);
+
+boardRoutes.patch(
+  "/subtasks/:subtaskId",
+  validate(updateSubtaskSchema),
+  (req, res, next) => {
+    boardController.updateSubtask(req, res).catch(next);
+  },
+);
+
+boardRoutes.delete("/subtasks/:subtaskId", (req, res, next) => {
+  boardController.deleteSubtask(req, res).catch(next);
+});
+
+boardRoutes.post("/tasks/:taskId/favorite", (req, res, next) => {
+  boardController.favoriteTask(req, res).catch(next);
+});
+
+boardRoutes.delete("/tasks/:taskId/favorite", (req, res, next) => {
+  boardController.unfavoriteTask(req, res).catch(next);
+});
 
 boardRoutes.get("/tasks/:taskId", (req, res, next) => {
   boardController.getTask(req, res).catch(next);

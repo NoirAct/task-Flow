@@ -6,6 +6,8 @@ import {
 } from "../repositories/comment.repository.js";
 import { projectRepository } from "../repositories/project.repository.js";
 import { taskRepository } from "../repositories/task.repository.js";
+import { userRepository } from "../repositories/user.repository.js";
+import { userCanAccessProject } from "./access.service.js";
 import { logActivity } from "./activity.service.js";
 import { notifyUser } from "../realtime.js";
 import { AppError } from "../utils/errors.js";
@@ -50,26 +52,33 @@ function mapLabel(label: LabelSummary) {
   };
 }
 
-function mapTaskCard(task: {
-  id: string;
-  columnId: string;
-  title: string;
-  description: string | null;
-  position: number;
-  priority: TaskPriority;
-  dueDate: Date | null;
-  estimatedMinutes: number | null;
-  spentMinutes: number;
-  assigneeId: string | null;
-  createdById: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  labels?: { label: LabelSummary }[];
-  checklist?: { id: string; done: boolean }[];
-  assignee?: UserSummary | null;
-}) {
+function mapTaskCard(
+  task: {
+    id: string;
+    columnId: string;
+    title: string;
+    description: string | null;
+    position: number;
+    priority: TaskPriority;
+    dueDate: Date | null;
+    estimatedMinutes: number | null;
+    spentMinutes: number;
+    assigneeId: string | null;
+    createdById: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    labels?: { label: LabelSummary }[];
+    checklist?: { id: string; done: boolean }[];
+    subtasks?: { id: string; done: boolean }[];
+    favorites?: { userId: string }[];
+    assignee?: UserSummary | null;
+  },
+  userId?: string,
+) {
   const checklistTotal = task.checklist?.length ?? 0;
   const checklistDone = task.checklist?.filter((item) => item.done).length ?? 0;
+  const subtasksTotal = task.subtasks?.length ?? 0;
+  const subtasksDone = task.subtasks?.filter((item) => item.done).length ?? 0;
 
   return {
     id: task.id,
@@ -89,6 +98,11 @@ function mapTaskCard(task: {
     labels: (task.labels ?? []).map((item) => mapLabel(item.label)),
     checklistTotal,
     checklistDone,
+    subtasksTotal,
+    subtasksDone,
+    isFavorite:
+      userId != null &&
+      (task.favorites ?? []).some((favorite) => favorite.userId === userId),
   };
 }
 
@@ -143,11 +157,18 @@ function mapComment(comment: {
 
 function mapTaskDetail(
   task: NonNullable<Awaited<ReturnType<typeof taskRepository.findById>>>,
+  userId?: string,
 ) {
   return {
-    ...mapTaskCard(task),
+    ...mapTaskCard(task, userId),
     createdBy: mapUser(task.createdBy),
     checklist: task.checklist.map((item) => ({
+      id: item.id,
+      title: item.title,
+      done: item.done,
+      position: item.position,
+    })),
+    subtasks: task.subtasks.map((item) => ({
       id: item.id,
       title: item.title,
       done: item.done,
@@ -160,6 +181,7 @@ function mapTaskDetail(
 
 function mapBoard(
   board: NonNullable<Awaited<ReturnType<typeof boardRepository.findByProjectId>>>,
+  userId?: string,
 ) {
   return {
     id: board.id,
@@ -178,9 +200,20 @@ function mapBoard(
       key: column.key,
       name: column.name,
       position: column.position,
-      tasks: column.tasks.map(mapTaskCard),
+      tasks: column.tasks.map((task) => mapTaskCard(task, userId)),
     })),
   };
+}
+
+function slugify(value: string) {
+  return (
+    value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "column"
+  );
 }
 
 async function assertProjectAccess(userId: string, projectId: string) {
@@ -208,7 +241,7 @@ export const boardService = {
       board = await boardRepository.createForProject(projectId);
     }
 
-    return mapBoard(board);
+    return mapBoard(board, userId);
   },
 
   async getTask(userId: string, taskId: string) {
@@ -217,7 +250,98 @@ export const boardService = {
       throw new AppError(404, "Task not found", "NOT_FOUND");
     }
     await assertProjectAccess(userId, task.column.board.projectId);
-    return mapTaskDetail(task);
+    return mapTaskDetail(task, userId);
+  },
+
+  async createColumn(userId: string, boardId: string, input: { name: string }) {
+    const board = await boardRepository.findBoardById(boardId);
+    if (!board) {
+      throw new AppError(404, "Board not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, board.projectId);
+
+    const baseKey = slugify(input.name);
+    const existingKeys = new Set(board.columns.map((column) => column.key));
+    let key = baseKey;
+    let suffix = 2;
+    while (existingKeys.has(key)) {
+      key = `${baseKey}_${suffix++}`;
+    }
+
+    const column = await boardRepository.createColumn({
+      boardId,
+      key,
+      name: input.name,
+      position: board.columns.length,
+    });
+
+    return {
+      id: column.id,
+      key: column.key,
+      name: column.name,
+      position: column.position,
+      tasks: [],
+    };
+  },
+
+  async updateColumn(userId: string, columnId: string, input: { name: string }) {
+    const column = await boardRepository.findColumn(columnId);
+    if (!column) {
+      throw new AppError(404, "Column not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, column.board.projectId);
+
+    const updated = await boardRepository.updateColumn(columnId, { name: input.name });
+    return {
+      id: updated.id,
+      key: updated.key,
+      name: updated.name,
+      position: updated.position,
+    };
+  },
+
+  async deleteColumn(userId: string, columnId: string) {
+    const column = await boardRepository.findColumn(columnId);
+    if (!column) {
+      throw new AppError(404, "Column not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, column.board.projectId);
+
+    if (column._count.tasks > 0) {
+      throw new AppError(
+        400,
+        "Move or delete the tasks in this column first",
+        "COLUMN_NOT_EMPTY",
+      );
+    }
+
+    await boardRepository.deleteColumn(columnId);
+
+    const board = await boardRepository.findBoardById(column.board.id);
+    if (board) {
+      await boardRepository.reorderColumns(
+        board.id,
+        board.columns.map((item) => item.id),
+      );
+    }
+  },
+
+  async reorderColumns(userId: string, boardId: string, columnIds: string[]) {
+    const board = await boardRepository.findBoardById(boardId);
+    if (!board) {
+      throw new AppError(404, "Board not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, board.projectId);
+
+    const currentIds = new Set(board.columns.map((column) => column.id));
+    if (
+      columnIds.length !== currentIds.size ||
+      columnIds.some((id) => !currentIds.has(id))
+    ) {
+      throw new AppError(400, "Column list does not match the board", "INVALID_ORDER");
+    }
+
+    await boardRepository.reorderColumns(boardId, columnIds);
   },
 
   async createTask(userId: string, input: CreateTaskInput) {
@@ -262,7 +386,7 @@ export const boardService = {
       });
     }
 
-    return mapTaskCard(task);
+    return mapTaskCard(task, userId);
   },
 
   async updateTask(userId: string, taskId: string, input: UpdateTaskInput) {
@@ -291,7 +415,21 @@ export const boardService = {
       labelIds: input.labelIds,
     });
 
-    return mapTaskDetail(task);
+    if (
+      input.assigneeId &&
+      input.assigneeId !== existing.assigneeId &&
+      input.assigneeId !== userId
+    ) {
+      await notifyUser({
+        userId: input.assigneeId,
+        type: "task_assigned",
+        title: "Task assigned",
+        body: task.title,
+        link: `/app/projects/${projectId}/board`,
+      });
+    }
+
+    return mapTaskDetail(task, userId);
   },
 
   async moveTask(userId: string, taskId: string, input: MoveTaskInput) {
@@ -333,10 +471,32 @@ export const boardService = {
     } else {
       await taskRepository.reorderColumn(sourceColumnId, sourceIds);
       await taskRepository.reorderColumn(targetColumnId, targetIds);
+
+      const projectId = existing.column.board.projectId;
+      const completed = targetColumn.key === "done";
+
+      await logActivity({
+        userId,
+        projectId,
+        action: completed ? "task.completed" : "task.moved",
+        entityType: "task",
+        entityId: taskId,
+        metadata: { title: existing.title, to: targetColumn.name },
+      });
+
+      if (existing.assigneeId && existing.assigneeId !== userId) {
+        await notifyUser({
+          userId: existing.assigneeId,
+          type: completed ? "task_completed" : "task_status_changed",
+          title: completed ? "Task completed" : "Task status changed",
+          body: `${existing.title} → ${targetColumn.name}`,
+          link: `/app/projects/${projectId}/board`,
+        });
+      }
     }
 
     const moved = await taskRepository.findById(taskId);
-    return mapTaskCard(moved!);
+    return mapTaskCard(moved!, userId);
   },
 
   async deleteTask(userId: string, taskId: string) {
@@ -423,6 +583,72 @@ export const boardService = {
     await taskRepository.deleteChecklistItem(itemId);
   },
 
+  async addSubtask(userId: string, taskId: string, input: { title: string }) {
+    const task = await taskRepository.findById(taskId);
+    if (!task) {
+      throw new AppError(404, "Task not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, task.column.board.projectId);
+
+    const position = await taskRepository.countSubtasks(taskId);
+    const subtask = await taskRepository.createSubtask({
+      taskId,
+      title: input.title,
+      position,
+    });
+
+    return {
+      id: subtask.id,
+      title: subtask.title,
+      done: subtask.done,
+      position: subtask.position,
+    };
+  },
+
+  async updateSubtask(
+    userId: string,
+    subtaskId: string,
+    input: { title?: string; done?: boolean },
+  ) {
+    const subtask = await taskRepository.findSubtask(subtaskId);
+    if (!subtask) {
+      throw new AppError(404, "Subtask not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, subtask.task.column.board.projectId);
+
+    const updated = await taskRepository.updateSubtask(subtaskId, input);
+    return {
+      id: updated.id,
+      title: updated.title,
+      done: updated.done,
+      position: updated.position,
+    };
+  },
+
+  async deleteSubtask(userId: string, subtaskId: string) {
+    const subtask = await taskRepository.findSubtask(subtaskId);
+    if (!subtask) {
+      throw new AppError(404, "Subtask not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, subtask.task.column.board.projectId);
+    await taskRepository.deleteSubtask(subtaskId);
+  },
+
+  async setTaskFavorite(userId: string, taskId: string, favorite: boolean) {
+    const task = await taskRepository.findById(taskId);
+    if (!task) {
+      throw new AppError(404, "Task not found", "NOT_FOUND");
+    }
+    await assertProjectAccess(userId, task.column.board.projectId);
+
+    if (favorite) {
+      await taskRepository.addFavorite(userId, taskId);
+    } else {
+      await taskRepository.removeFavorite(userId, taskId);
+    }
+    return { taskId, isFavorite: favorite };
+  },
+
   async createComment(
     userId: string,
     taskId: string,
@@ -432,7 +658,8 @@ export const boardService = {
     if (!task) {
       throw new AppError(404, "Task not found", "NOT_FOUND");
     }
-    await assertProjectAccess(userId, task.column.board.projectId);
+    const projectId = task.column.board.projectId;
+    await assertProjectAccess(userId, projectId);
 
     const comment = await commentRepository.create({
       taskId,
@@ -442,19 +669,43 @@ export const boardService = {
 
     await logActivity({
       userId,
-      projectId: task.column.board.projectId,
+      projectId,
       action: "comment.created",
       entityType: "comment",
       entityId: comment.id,
     });
 
-    if (task.assigneeId && task.assigneeId !== userId) {
+    const notified = new Set<string>([userId]);
+
+    // Mentions in the form @user@email.com notify the mentioned user
+    const mentionedEmails = [
+      ...input.body.matchAll(/@([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/g),
+    ].map((match) => match[1].toLowerCase());
+
+    if (mentionedEmails.length) {
+      const mentioned = await userRepository.findManyByEmails(mentionedEmails);
+      for (const user of mentioned) {
+        if (notified.has(user.id)) continue;
+        const access = await userCanAccessProject(user.id, projectId);
+        if (!access) continue;
+        notified.add(user.id);
+        await notifyUser({
+          userId: user.id,
+          type: "mention",
+          title: "You were mentioned",
+          body: task.title,
+          link: `/app/projects/${projectId}/board`,
+        });
+      }
+    }
+
+    if (task.assigneeId && !notified.has(task.assigneeId)) {
       await notifyUser({
         userId: task.assigneeId,
         type: "comment",
         title: "New comment",
         body: task.title,
-        link: `/app/projects/${task.column.board.projectId}/board`,
+        link: `/app/projects/${projectId}/board`,
       });
     }
 

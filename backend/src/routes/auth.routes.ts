@@ -31,6 +31,14 @@ authRoutes.get("/me", authenticate, (req, res, next) => {
   authController.me(req, res).catch(next);
 });
 
+authRoutes.get("/sessions", authenticate, (req, res, next) => {
+  authController.listSessions(req, res).catch(next);
+});
+
+authRoutes.delete("/sessions/:sessionId", authenticate, (req, res, next) => {
+  authController.revokeSession(req, res).catch(next);
+});
+
 authRoutes.post("/forgot-password", validate(forgotPasswordSchema), (req, res, next) => {
   authController.forgotPassword(req, res).catch(next);
 });

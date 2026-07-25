@@ -1,3 +1,5 @@
+import type { ProjectStatus } from "@prisma/client";
+import { prisma } from "../config/database.js";
 import { AppError } from "../utils/errors.js";
 import { projectRepository } from "../repositories/project.repository.js";
 import type {
@@ -5,6 +7,25 @@ import type {
   ListProjectsQuery,
   UpdateProjectInput,
 } from "../validators/project.validator.js";
+
+function parseDate(value: string | null | undefined): Date | null | undefined {
+  if (value === undefined) return undefined;
+  return value ? new Date(value) : null;
+}
+
+async function assertTeamAccess(userId: string, teamId: string | null | undefined) {
+  if (!teamId) return;
+  const team = await prisma.team.findFirst({
+    where: {
+      id: teamId,
+      OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+    },
+    select: { id: true },
+  });
+  if (!team) {
+    throw new AppError(404, "Team not found", "TEAM_NOT_FOUND");
+  }
+}
 
 function slugKeyFromName(name: string) {
   const letters = name.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
@@ -19,6 +40,11 @@ function mapProject(
     description: string | null;
     key: string;
     color: string;
+    icon: string | null;
+    status: ProjectStatus;
+    startDate: Date | null;
+    endDate: Date | null;
+    teamId: string | null;
     ownerId: string;
     archivedAt: Date | null;
     createdAt: Date;
@@ -33,6 +59,11 @@ function mapProject(
     description: project.description,
     key: project.key,
     color: project.color,
+    icon: project.icon,
+    status: project.status,
+    startDate: project.startDate,
+    endDate: project.endDate,
+    teamId: project.teamId,
     ownerId: project.ownerId,
     archivedAt: project.archivedAt,
     createdAt: project.createdAt,
@@ -60,13 +91,21 @@ async function ensureUniqueKey(ownerId: string, baseKey: string) {
 
 export const projectService = {
   async list(userId: string, query: ListProjectsQuery) {
-    const projects = await projectRepository.findManyForUser(userId, {
+    const result = await projectRepository.findManyForUser(userId, {
       search: query.search,
       archived: query.archived,
       favoritesOnly: query.favorites === "true",
+      status: query.status,
+      page: query.page,
+      perPage: query.perPage,
     });
 
-    return projects.map((project) => mapProject(project, userId));
+    return {
+      projects: result.projects.map((project) => mapProject(project, userId)),
+      total: result.total,
+      page: result.page,
+      perPage: result.perPage,
+    };
   },
 
   async getById(userId: string, id: string) {
@@ -80,6 +119,7 @@ export const projectService = {
   async create(userId: string, input: CreateProjectInput) {
     const baseKey = input.key ?? slugKeyFromName(input.name);
     const key = await ensureUniqueKey(userId, baseKey);
+    await assertTeamAccess(userId, input.teamId);
 
     const project = await projectRepository.create({
       name: input.name,
@@ -87,6 +127,11 @@ export const projectService = {
       key,
       color: input.color ?? "#1f6feb",
       ownerId: userId,
+      icon: input.icon ?? null,
+      status: input.status,
+      startDate: parseDate(input.startDate) ?? null,
+      endDate: parseDate(input.endDate) ?? null,
+      teamId: input.teamId ?? null,
     });
 
     return mapProject(project, userId);
@@ -97,11 +142,17 @@ export const projectService = {
     if (!existing) {
       throw new AppError(404, "Project not found", "NOT_FOUND");
     }
+    await assertTeamAccess(userId, input.teamId);
 
     const project = await projectRepository.update(id, {
       name: input.name,
       description: input.description,
       color: input.color,
+      icon: input.icon,
+      status: input.status,
+      startDate: parseDate(input.startDate),
+      endDate: parseDate(input.endDate),
+      teamId: input.teamId,
     });
 
     // Re-fetch favorites for current user after update include may be all favorites
@@ -180,6 +231,10 @@ export const projectService = {
       key,
       color: existing.color,
       ownerId: userId,
+      icon: existing.icon,
+      startDate: existing.startDate,
+      endDate: existing.endDate,
+      teamId: existing.teamId,
     });
 
     return mapProject(project, userId);

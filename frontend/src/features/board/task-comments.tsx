@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Paperclip, Smile, Trash2 } from "lucide-react";
+import { Paperclip, Pencil, Smile, Trash2 } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -30,6 +30,8 @@ export function TaskComments({ taskId, comments, attachments }: TaskCommentsProp
   const queryClient = useQueryClient();
   const [body, setBody] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["task", taskId] });
 
@@ -44,6 +46,16 @@ export function TaskComments({ taskId, comments, attachments }: TaskCommentsProp
   const deleteCommentMutation = useMutation({
     mutationFn: boardApi.deleteComment,
     onSuccess: invalidate,
+  });
+
+  const updateCommentMutation = useMutation({
+    mutationFn: ({ id, value }: { id: string; value: string }) =>
+      boardApi.updateComment(id, value),
+    onSuccess: async () => {
+      setEditingId(null);
+      setEditValue("");
+      await invalidate();
+    },
   });
 
   const uploadTaskMutation = useMutation({
@@ -125,26 +137,78 @@ export function TaskComments({ taskId, comments, attachments }: TaskCommentsProp
                     </p>
                     <p className="text-[11px] text-fg-subtle">
                       {new Date(comment.createdAt).toLocaleString()}
+                      {comment.updatedAt !== comment.createdAt ? (
+                        <span className="ml-1">· {t("board:edited")}</span>
+                      ) : null}
                     </p>
                   </div>
                   {user?.id === comment.author?.id ? (
-                    <button
-                      type="button"
-                      className="rounded p-1 text-fg-subtle hover:text-danger"
-                      onClick={() => {
-                        if (window.confirm(t("board:confirmDeleteComment"))) {
-                          deleteCommentMutation.mutate(comment.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        aria-label={t("board:editComment")}
+                        className="rounded p-1 text-fg-subtle hover:text-fg"
+                        onClick={() => {
+                          setEditingId(comment.id);
+                          setEditValue(comment.body);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded p-1 text-fg-subtle hover:text-danger"
+                        onClick={() => {
+                          if (window.confirm(t("board:confirmDeleteComment"))) {
+                            deleteCommentMutation.mutate(comment.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </>
                   ) : null}
                 </div>
 
-                <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-fg [&_a]:text-accent [&_code]:rounded [&_code]:bg-canvas [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-canvas [&_pre]:p-3">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.body}</ReactMarkdown>
-                </div>
+                {editingId === comment.id ? (
+                  <div className="space-y-2">
+                    <textarea
+                      autoFocus
+                      value={editValue}
+                      onChange={(event) => setEditValue(event.target.value)}
+                      className="min-h-20 w-full rounded-md border border-border bg-surface px-3 py-2 font-mono text-sm outline-none focus:border-accent"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        disabled={!editValue.trim()}
+                        loading={updateCommentMutation.isPending}
+                        onClick={() =>
+                          updateCommentMutation.mutate({
+                            id: comment.id,
+                            value: editValue.trim(),
+                          })
+                        }
+                      >
+                        {t("common:actions.save")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingId(null);
+                          setEditValue("");
+                        }}
+                      >
+                        {t("common:actions.cancel")}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-fg [&_a]:text-accent [&_code]:rounded [&_code]:bg-canvas [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-canvas [&_pre]:p-3">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.body}</ReactMarkdown>
+                  </div>
+                )}
 
                 {comment.attachments.length > 0 ? (
                   <ul className="mt-2 space-y-1">

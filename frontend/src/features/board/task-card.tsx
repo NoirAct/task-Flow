@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarDays, CheckSquare, GripVertical, Trash2 } from "lucide-react";
+import { CalendarDays, CheckSquare, GripVertical, ListTree, Star, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -58,7 +58,12 @@ export function TaskCard({ task, onOpen, onDelete }: TaskCardProps) {
           className="min-w-0 flex-1 cursor-pointer text-left"
           onClick={() => onOpen(task.id)}
         >
-          <p className="text-sm font-medium text-fg">{task.title}</p>
+          <p className="flex items-center gap-1.5 text-sm font-medium text-fg">
+            {task.isFavorite ? (
+              <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />
+            ) : null}
+            <span className="min-w-0 flex-1">{task.title}</span>
+          </p>
           {task.description ? (
             <p className="mt-1 line-clamp-2 text-xs text-fg-muted">{task.description}</p>
           ) : null}
@@ -91,6 +96,12 @@ export function TaskCard({ task, onOpen, onDelete }: TaskCardProps) {
               <span className="inline-flex items-center gap-1">
                 <CheckSquare className="h-3 w-3" />
                 {task.checklistDone}/{task.checklistTotal}
+              </span>
+            ) : null}
+            {task.subtasksTotal > 0 ? (
+              <span className="inline-flex items-center gap-1">
+                <ListTree className="h-3 w-3" />
+                {task.subtasksDone}/{task.subtasksTotal}
               </span>
             ) : null}
             {task.assignee ? <Avatar name={task.assignee.name} size="sm" className="h-5 w-5 text-[9px]" /> : null}

@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Star, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -64,6 +65,7 @@ export function TaskDetailDialog({
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const [newLabelName, setNewLabelName] = useState("");
   const [checklistTitle, setChecklistTitle] = useState("");
+  const [subtaskTitle, setSubtaskTitle] = useState("");
 
   useEffect(() => {
     if (!task) return;
@@ -97,6 +99,34 @@ export function TaskDetailDialog({
         assigneeId: assigneeId || null,
         labelIds: selectedLabelIds,
       }),
+    onSuccess: async () => {
+      await invalidate();
+      toast.success(t("board:toasts.taskSaved"));
+      onClose();
+    },
+  });
+
+  const favoriteMutation = useMutation({
+    mutationFn: () => boardApi.setFavorite(taskId!, !task?.isFavorite),
+    onSuccess: invalidate,
+  });
+
+  const addSubtaskMutation = useMutation({
+    mutationFn: () => boardApi.addSubtask(taskId!, subtaskTitle.trim()),
+    onSuccess: async () => {
+      setSubtaskTitle("");
+      await invalidate();
+    },
+  });
+
+  const toggleSubtaskMutation = useMutation({
+    mutationFn: ({ id, done }: { id: string; done: boolean }) =>
+      boardApi.updateSubtask(id, { done }),
+    onSuccess: invalidate,
+  });
+
+  const deleteSubtaskMutation = useMutation({
+    mutationFn: (id: string) => boardApi.deleteSubtask(id),
     onSuccess: invalidate,
   });
 
@@ -147,11 +177,30 @@ export function TaskDetailDialog({
         </div>
       ) : (
         <div className="space-y-5">
-          <Input
-            label={t("board:taskTitle")}
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-          />
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <Input
+                label={t("board:taskTitle")}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+              />
+            </div>
+            <button
+              type="button"
+              aria-label={
+                task.isFavorite ? t("board:unfavoriteTask") : t("board:favoriteTask")
+              }
+              onClick={() => favoriteMutation.mutate()}
+              className="mb-0.5 rounded-md border border-border p-2 text-fg-subtle hover:bg-canvas hover:text-fg"
+            >
+              <Star
+                className={cn(
+                  "h-4 w-4",
+                  task.isFavorite && "fill-amber-400 text-amber-400",
+                )}
+              />
+            </button>
+          </div>
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-fg-muted">{t("board:description")}</span>
@@ -328,6 +377,70 @@ export function TaskDetailDialog({
                 disabled={!checklistTitle.trim()}
                 loading={addChecklistMutation.isPending}
                 onClick={() => addChecklistMutation.mutate()}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-fg-muted">{t("board:subtasks")}</span>
+              <Badge>
+                {task.subtasks.filter((item) => item.done).length}/{task.subtasks.length}
+              </Badge>
+            </div>
+            <ul className="space-y-1.5">
+              {task.subtasks.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center gap-2 rounded-md border border-border px-2 py-1.5"
+                >
+                  <input
+                    type="checkbox"
+                    checked={item.done}
+                    onChange={(event) =>
+                      toggleSubtaskMutation.mutate({
+                        id: item.id,
+                        done: event.target.checked,
+                      })
+                    }
+                  />
+                  <span
+                    className={cn(
+                      "flex-1 text-sm",
+                      item.done && "text-fg-muted line-through",
+                    )}
+                  >
+                    {item.title}
+                  </span>
+                  <button
+                    type="button"
+                    className="rounded p-1 text-fg-subtle hover:text-danger"
+                    onClick={() => deleteSubtaskMutation.mutate(item.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-2">
+              <input
+                value={subtaskTitle}
+                onChange={(event) => setSubtaskTitle(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && subtaskTitle.trim()) {
+                    addSubtaskMutation.mutate();
+                  }
+                }}
+                placeholder={t("board:subtaskPlaceholder")}
+                className="h-9 flex-1 rounded-md border border-border bg-surface px-3 text-sm outline-none focus:border-accent"
+              />
+              <Button
+                size="sm"
+                disabled={!subtaskTitle.trim()}
+                loading={addSubtaskMutation.isPending}
+                onClick={() => addSubtaskMutation.mutate()}
               >
                 <Plus className="h-4 w-4" />
               </Button>

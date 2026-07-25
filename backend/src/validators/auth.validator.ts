@@ -9,6 +9,7 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: z.string().trim().email().toLowerCase(),
   password: z.string().min(1),
+  rememberMe: z.boolean().optional().default(true),
 });
 
 export const forgotPasswordSchema = z.object({

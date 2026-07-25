@@ -3,8 +3,8 @@ import { projectService } from "../services/project.service.js";
 
 export const projectController = {
   async list(req: Request, res: Response) {
-    const projects = await projectService.list(req.user!.sub, req.query as never);
-    return res.json({ projects });
+    const result = await projectService.list(req.user!.sub, req.query as never);
+    return res.json(result);
   },
 
   async getById(req: Request, res: Response) {

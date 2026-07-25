@@ -11,10 +11,11 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import { BoardColumnView } from "@/features/board/board-column";
 import { TaskDetailDialog } from "@/features/board/task-detail-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -92,7 +93,65 @@ export function BoardPage() {
     onError: () => queryClient.invalidateQueries({ queryKey: ["board", projectId] }),
   });
 
+  const invalidateBoard = () =>
+    queryClient.invalidateQueries({ queryKey: ["board", projectId] });
+
+  const [addingColumn, setAddingColumn] = useState(false);
+  const [newColumnName, setNewColumnName] = useState("");
+
+  const createColumnMutation = useMutation({
+    mutationFn: (name: string) => boardApi.createColumn(localBoard!.id, name),
+    onSuccess: invalidateBoard,
+  });
+
+  const renameColumnMutation = useMutation({
+    mutationFn: ({ columnId, name }: { columnId: string; name: string }) =>
+      boardApi.updateColumn(columnId, name),
+    onSuccess: invalidateBoard,
+  });
+
+  const deleteColumnMutation = useMutation({
+    mutationFn: boardApi.deleteColumn,
+    onSuccess: invalidateBoard,
+    onError: () => toast.error(t("board:columnNotEmpty")),
+  });
+
+  const reorderColumnsMutation = useMutation({
+    mutationFn: (columnIds: string[]) =>
+      boardApi.reorderColumns(localBoard!.id, columnIds),
+    onSettled: invalidateBoard,
+  });
+
   const columns = localBoard?.columns ?? [];
+
+  function moveColumn(columnId: string, direction: -1 | 1) {
+    const index = columns.findIndex((column) => column.id === columnId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= columns.length) return;
+    const ids = columns.map((column) => column.id);
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    setLocalBoard((prev) => {
+      if (!prev) return prev;
+      const next = cloneBoard(prev);
+      next.columns = ids.map(
+        (id, position) => ({
+          ...next.columns.find((column) => column.id === id)!,
+          position,
+        }),
+      );
+      boardRef.current = next;
+      return next;
+    });
+    reorderColumnsMutation.mutate(ids);
+  }
+
+  async function submitNewColumn() {
+    const value = newColumnName.trim();
+    if (!value) return;
+    await createColumnMutation.mutateAsync(value);
+    setNewColumnName("");
+    setAddingColumn(false);
+  }
 
   function onDragStart(event: DragStartEvent) {
     const task = event.active.data.current?.task as BoardTask | undefined;
@@ -241,17 +300,77 @@ export function BoardPage() {
         onDragEnd={onDragEnd}
       >
         <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-2">
-          {columns.map((column) => (
+          {columns.map((column, index) => (
             <BoardColumnView
               key={column.id}
               column={column}
+              canMoveLeft={index > 0}
+              canMoveRight={index < columns.length - 1}
               onAddTask={async (columnId, title) => {
                 await createMutation.mutateAsync({ columnId, title });
               }}
               onOpenTask={setSelectedTaskId}
               onDeleteTask={(taskId) => deleteMutation.mutate(taskId)}
+              onRenameColumn={async (columnId, name) => {
+                await renameColumnMutation.mutateAsync({ columnId, name });
+              }}
+              onDeleteColumn={(columnId) => {
+                if (window.confirm(t("board:confirmDeleteColumn"))) {
+                  deleteColumnMutation.mutate(columnId);
+                }
+              }}
+              onMoveColumn={moveColumn}
             />
           ))}
+
+          <div className="w-72 shrink-0">
+            {addingColumn ? (
+              <div className="space-y-2 rounded-lg border border-border bg-canvas/60 p-2">
+                <input
+                  autoFocus
+                  value={newColumnName}
+                  onChange={(event) => setNewColumnName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") void submitNewColumn();
+                    if (event.key === "Escape") {
+                      setAddingColumn(false);
+                      setNewColumnName("");
+                    }
+                  }}
+                  placeholder={t("board:columnPlaceholder")}
+                  className="h-9 w-full rounded-md border border-border bg-surface px-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void submitNewColumn()}
+                    className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+                  >
+                    {t("board:addColumn")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddingColumn(false);
+                      setNewColumnName("");
+                    }}
+                    className="rounded-md px-3 py-1.5 text-xs text-fg-muted hover:bg-canvas"
+                  >
+                    {t("common:actions.cancel")}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAddingColumn(true)}
+                className="flex h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border text-sm text-fg-muted transition-colors hover:border-fg-subtle/60 hover:text-fg"
+              >
+                <Plus className="h-4 w-4" />
+                {t("board:addColumn")}
+              </button>
+            )}
+          </div>
         </div>
 
         <DragOverlay>
