@@ -20,10 +20,12 @@ import {
   updateSubtaskSchema,
   updateTaskSchema,
 } from "../validators/task.validator.js";
+import { demoReadOnly } from "../middlewares/demo-mode.js";
 
 export const boardRoutes = Router();
 
 boardRoutes.use(authenticate);
+boardRoutes.use(demoReadOnly);
 
 boardRoutes.get("/projects/:projectId/board", (req, res, next) => {
   boardController.getByProject(req, res).catch(next);

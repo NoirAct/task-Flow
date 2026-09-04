@@ -1,10 +1,12 @@
 import { Router } from "express";
+import { demoReadOnly } from "../middlewares/demo-mode.js";
 import { appController } from "../controllers/app.controller.js";
 import { authenticate } from "../middlewares/authenticate.js";
 
 export const appRoutes = Router();
 
 appRoutes.use(authenticate);
+appRoutes.use(demoReadOnly);
 
 appRoutes.get("/teams", (req, res, next) => {
   appController.listTeams(req, res).catch(next);

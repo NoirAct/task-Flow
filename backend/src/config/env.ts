@@ -10,6 +10,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3333),
   CLIENT_URL: z.string().url().default("http://localhost:5173"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  COOKIE_PATH: z.string().default("/auth"),
+  DEMO_MODE: z.string().default("false").transform((value) => value === "true"),
 });
 
 export const env = envSchema.parse(process.env);

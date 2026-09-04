@@ -10,7 +10,7 @@ export function initRealtime(httpServer: HttpServer) {
   io = new Server(httpServer, {
     cors: {
       origin: (origin, callback) => {
-        if (!origin || origin === env.CLIENT_URL || /^http:\/\/localhost:\d+$/.test(origin)) {
+        if (!origin || origin === env.CLIENT_URL || (env.NODE_ENV === "development" && /^http:\/\/localhost:\d+$/.test(origin))) {
           callback(null, true);
           return;
         }

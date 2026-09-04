@@ -14,7 +14,7 @@ function setRefreshCookie(res: Response, token: string, expiresAt?: Date) {
     httpOnly: true,
     secure: env.NODE_ENV === "production",
     sameSite: "lax",
-    path: "/auth",
+    path: env.COOKIE_PATH,
     // Without `expires` the cookie lives only for the browser session (remember me off)
     ...(expiresAt ? { expires: expiresAt } : {}),
   });
@@ -25,7 +25,7 @@ function clearRefreshCookie(res: Response) {
     httpOnly: true,
     secure: env.NODE_ENV === "production",
     sameSite: "lax",
-    path: "/auth",
+    path: env.COOKIE_PATH,
   });
 }
 

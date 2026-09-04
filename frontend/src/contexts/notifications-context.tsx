@@ -22,7 +22,7 @@ type NotificationsContextValue = {
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3333";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? import.meta.env.VITE_API_URL ?? "http://localhost:3333";
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -42,7 +42,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     const token = getAccessToken();
     if (!token) return;
 
-    socket = io(API_URL, {
+    socket = io(SOCKET_URL, {
       auth: { token },
       transports: ["websocket", "polling"],
     });

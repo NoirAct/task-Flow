@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
-import { refreshTokenRepository } from "../repositories/refresh-token.repository.js";
+import { hashRefreshToken, refreshTokenRepository } from "../repositories/refresh-token.repository.js";
 import { userRepository } from "../repositories/user.repository.js";
 import { AppError } from "../utils/errors.js";
 import type {
@@ -20,6 +20,10 @@ function hashPassword(password: string) {
 
 function comparePassword(password: string, hash: string) {
   return bcrypt.compare(password, hash);
+}
+
+function hashResetToken(token: string) {
+  return crypto.createHash("sha256").update(token).digest("hex");
 }
 
 function signAccessToken(user: { id: string; email: string }) {
@@ -170,7 +174,7 @@ export const authService = {
       ip: session.ip,
       createdAt: session.createdAt,
       expiresAt: session.expiresAt,
-      current: currentToken != null && session.token === currentToken,
+      current: currentToken != null && session.token === hashRefreshToken(currentToken),
     }));
   },
 
@@ -199,7 +203,7 @@ export const authService = {
 
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 60 * 60 * 1000);
-    await userRepository.setPasswordResetToken(user.id, token, expires);
+    await userRepository.setPasswordResetToken(user.id, hashResetToken(token), expires);
 
     const resetUrl = `${env.CLIENT_URL}/reset-password?token=${token}`;
 
@@ -217,7 +221,7 @@ export const authService = {
   },
 
   async resetPassword(input: ResetPasswordInput) {
-    const user = await userRepository.findByPasswordResetToken(input.token);
+    const user = await userRepository.findByPasswordResetToken(hashResetToken(input.token));
     if (!user) {
       throw new AppError(400, "Invalid or expired reset token", "INVALID_RESET_TOKEN");
     }

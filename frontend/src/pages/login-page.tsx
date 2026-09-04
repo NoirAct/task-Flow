@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useAuthErrorMessage } from "@/hooks/use-auth-error";
 
 export function LoginPage() {
+  const isDemo = import.meta.env.VITE_DEMO_MODE === "true";
   const { t } = useTranslation("auth");
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -31,7 +32,11 @@ export function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { email: "", password: "", rememberMe: true },
+    defaultValues: {
+      email: isDemo ? "demo@taskflow.dev" : "",
+      password: isDemo ? "DemoTaskFlow2026!" : "",
+      rememberMe: true,
+    },
   });
 
   const onSubmit = handleSubmit(async (values) => {
@@ -50,6 +55,11 @@ export function LoginPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-fg">{t("title")}</h1>
         <p className="mt-1 text-sm text-fg-muted">{t("subtitle")}</p>
       </div>
+      {isDemo ? (
+        <p className="mb-4 rounded-md border border-accent/30 bg-accent/10 px-3 py-2 text-sm text-fg-muted">
+          Demonstração somente leitura. As credenciais já estão preenchidas.
+        </p>
+      ) : null}
 
       <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
         <Input
@@ -77,9 +87,9 @@ export function LoginPage() {
             />
             {t("fields.rememberMe")}
           </label>
-          <Link to="/forgot-password" className="text-sm text-accent hover:underline">
+          {!isDemo ? <Link to="/forgot-password" className="text-sm text-accent hover:underline">
             {t("links.forgotPassword")}
-          </Link>
+          </Link> : null}
         </div>
 
         {formError ? (
@@ -91,12 +101,12 @@ export function LoginPage() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-fg-muted">
+      {!isDemo ? <p className="mt-6 text-center text-sm text-fg-muted">
         {t("links.noAccount")}{" "}
         <Link to="/register" className="font-medium text-accent hover:underline">
           {t("links.createOne")}
         </Link>
-      </p>
+      </p> : null}
     </div>
   );
 }

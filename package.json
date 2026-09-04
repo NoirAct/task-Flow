@@ -16,7 +16,9 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:migrate": "npm run db:migrate -w @taskflow/backend",
-    "db:generate": "npm run db:generate -w @taskflow/backend"
+    "db:generate": "npm run db:generate -w @taskflow/backend",
+    "db:deploy": "npm run db:deploy -w @taskflow/backend",
+    "db:seed": "npm run db:seed -w @taskflow/backend"
   },
   "engines": {
     "node": ">=20"

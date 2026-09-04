@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: taskflow-api
+    runtime: node
+    rootDir: .
+    buildCommand: npm ci && npm run db:generate -w @taskflow/backend && npm run build -w @taskflow/backend
+    startCommand: npm run db:deploy -w @taskflow/backend && npm run db:seed -w @taskflow/backend && npm start -w @taskflow/backend
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DEMO_MODE
+        value: "true"
+      - key: COOKIE_PATH
+        value: /api/auth
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        sync: false

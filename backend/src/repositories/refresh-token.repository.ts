@@ -1,4 +1,9 @@
 import { prisma } from "../config/database.js";
+import crypto from "node:crypto";
+
+export function hashRefreshToken(token: string) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
 
 export const refreshTokenRepository = {
   create(data: {
@@ -8,7 +13,9 @@ export const refreshTokenRepository = {
     userAgent?: string | null;
     ip?: string | null;
   }) {
-    return prisma.refreshToken.create({ data });
+    return prisma.refreshToken.create({
+      data: { ...data, token: hashRefreshToken(data.token) },
+    });
   },
 
   listActiveForUser(userId: string) {
@@ -36,7 +43,7 @@ export const refreshTokenRepository = {
   findValid(token: string) {
     return prisma.refreshToken.findFirst({
       where: {
-        token,
+        token: hashRefreshToken(token),
         revokedAt: null,
         expiresAt: { gt: new Date() },
       },
@@ -46,7 +53,7 @@ export const refreshTokenRepository = {
 
   revoke(token: string) {
     return prisma.refreshToken.updateMany({
-      where: { token, revokedAt: null },
+      where: { token: hashRefreshToken(token), revokedAt: null },
       data: { revokedAt: new Date() },
     });
   },

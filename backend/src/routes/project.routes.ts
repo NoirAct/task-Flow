@@ -7,10 +7,12 @@ import {
   listProjectsQuerySchema,
   updateProjectSchema,
 } from "../validators/project.validator.js";
+import { demoReadOnly } from "../middlewares/demo-mode.js";
 
 export const projectRoutes = Router();
 
 projectRoutes.use(authenticate);
+projectRoutes.use(demoReadOnly);
 
 projectRoutes.get("/", validate(listProjectsQuerySchema, "query"), (req, res, next) => {
   projectController.list(req, res).catch(next);

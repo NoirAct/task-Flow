@@ -8,10 +8,11 @@ import {
   registerSchema,
   resetPasswordSchema,
 } from "../validators/auth.validator.js";
+import { demoAccountCreationGuard } from "../middlewares/demo-mode.js";
 
 export const authRoutes = Router();
 
-authRoutes.post("/register", validate(registerSchema), (req, res, next) => {
+authRoutes.post("/register", demoAccountCreationGuard, validate(registerSchema), (req, res, next) => {
   authController.register(req, res).catch(next);
 });
 
@@ -39,10 +40,10 @@ authRoutes.delete("/sessions/:sessionId", authenticate, (req, res, next) => {
   authController.revokeSession(req, res).catch(next);
 });
 
-authRoutes.post("/forgot-password", validate(forgotPasswordSchema), (req, res, next) => {
+authRoutes.post("/forgot-password", demoAccountCreationGuard, validate(forgotPasswordSchema), (req, res, next) => {
   authController.forgotPassword(req, res).catch(next);
 });
 
-authRoutes.post("/reset-password", validate(resetPasswordSchema), (req, res, next) => {
+authRoutes.post("/reset-password", demoAccountCreationGuard, validate(resetPasswordSchema), (req, res, next) => {
   authController.resetPassword(req, res).catch(next);
 });

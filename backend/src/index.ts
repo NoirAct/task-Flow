@@ -8,6 +8,8 @@ import { env } from "./config/env.js";
 import { errorHandler } from "./middlewares/error-handler.js";
 import { initRealtime } from "./realtime.js";
 import { routes } from "./routes/index.js";
+import { authRateLimit } from "./middlewares/rate-limit.js";
+import { prisma } from "./config/database.js";
 
 const app = express();
 
@@ -34,14 +36,25 @@ app.use(
   }),
 );
 app.use(morgan(env.NODE_ENV === "development" ? "dev" : "combined"));
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 app.use(cookieParser());
+app.use("/auth", authRateLimit);
 app.use(routes);
 app.use(errorHandler);
 
 const server = http.createServer(app);
 initRealtime(server);
 
-server.listen(env.PORT, () => {
+server.listen(env.PORT, "0.0.0.0", () => {
   console.log(`TaskFlow API running on http://localhost:${env.PORT}`);
 });
+
+async function shutdown() {
+  server.close(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+}
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
