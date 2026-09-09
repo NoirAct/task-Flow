@@ -3,7 +3,7 @@ services:
     name: taskflow-api
     runtime: node
     rootDir: .
-    buildCommand: npm ci && npm run db:generate -w @taskflow/backend && npm run build -w @taskflow/backend
+    buildCommand: npm ci --include=dev && npm run db:generate -w @taskflow/backend && npm run build -w @taskflow/backend
     startCommand: npm run db:deploy -w @taskflow/backend && npm run db:seed -w @taskflow/backend && npm start -w @taskflow/backend
     healthCheckPath: /health
     envVars:
