@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import {
   CalendarDays,
   FolderKanban,
@@ -27,13 +27,19 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-surface">
-      <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-xs font-bold text-accent-fg">
-          TF
-        </div>
-        <span className="text-sm font-semibold tracking-tight text-fg">
-          {t("common:app.name")}
-        </span>
+      <div className="flex h-14 items-center border-b border-border px-4">
+        <Link
+          to="/app"
+          className="flex items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          aria-label={`${t("common:app.name")} — ${t("nav:dashboard")}`}
+        >
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-xs font-bold text-accent-fg">
+            TF
+          </div>
+          <span className="text-sm font-semibold tracking-tight text-fg">
+            {t("common:app.name")}
+          </span>
+        </Link>
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 p-3">
